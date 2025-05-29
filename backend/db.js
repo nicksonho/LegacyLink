@@ -1,17 +1,15 @@
+// src/db.js
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 
-dotenv.config(); // Load the .env file
+export const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/LegacyLink_v1');
+    console.log('✅ Connected to MongoDB');
+    return conn;
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  }
+};
 
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-mongoose.connection.once('open', () => {
-  console.log('✅ MongoDB connected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB connection error:', err);
-});
+export default mongoose;
