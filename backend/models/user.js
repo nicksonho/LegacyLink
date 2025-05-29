@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from '../db.js'; // Use the same mongoose instance!
 
 const UserSchema = new mongoose.Schema({
   name: String,
@@ -13,4 +13,4 @@ const UserSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-export default mongoose.model("User", UserSchema, "users");
+export default mongoose.models.User || mongoose.model("User", UserSchema);
