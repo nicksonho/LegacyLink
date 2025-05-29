@@ -1,14 +1,15 @@
 import '../db.js'; 
 import User from '../models/user.js'; 
 
-console.log(" Starting user seed...");
+console.log("🌐 Using DB URI:", process.env.MONGODB_URI);
+console.log("🚀 Starting user seed...");
 
 const user = new User({
-  name: "Declan",
-  email: "declan@smu.edu.sg",
+  name: "Glenn",
+  email: "Glenn@nus.edu.sg",
   passwordHash: "hashedPassword123",
   yearOfStudy: 1,
-  course: "Information Systems",
+  course: "Machine Learning",
   interests: ["startups", "tech", "AI"],
   bio: "Curious and passionate about innovation.",
   profilePicUrl: "https://link.to/pic.jpg"
