@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
-import User from '../../backend/models/user.js';
+import User from '../models/user.js';
 import { generateToken } from '../utils/generateToken.js';
 
 console.log('🧠 Mongoose readyState:', mongoose.connection.readyState);

@@ -1,4 +1,4 @@
-import Message from '../../backend/models/message.js';
+import Message from '../models/message.js';
 
 // Send a message
 export async function sendMessage(req, res) {

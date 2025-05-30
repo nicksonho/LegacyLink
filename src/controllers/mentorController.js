@@ -1,4 +1,4 @@
-import Mentor from '../../backend/models/mentor.js';
+import Mentor from '../models/mentor.js';
 
 export async function getAllMentors(req, res) {
   const mentors = await Mentor.find().select('-passwordHash');

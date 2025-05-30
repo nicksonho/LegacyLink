@@ -1,4 +1,4 @@
-import Notification from '../../backend/models/notification.js';
+import Notification from '../models/notification.js';
 
 // Get notifications for a user
 export async function getNotifications(req, res) {
