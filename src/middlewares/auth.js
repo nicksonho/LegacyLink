@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
-import User from '../../backend/models/user.js';
-import Mentor from '../../backend/models/mentor.js';
+import User from '../models/user.js';
+import Mentor from '../models/mentor.js';
 
 export async function protect(req, res, next) {
   let token = req.headers.authorization?.split(' ')[1];

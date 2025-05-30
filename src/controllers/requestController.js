@@ -1,5 +1,5 @@
-import Request from '../../backend/models/request.js';
-import User from '../../backend/models/user.js';
+import Request from '../models/request.js';
+import User from '../models/user.js';
 
 // STUDENT: Create a mentorship request
 export async function createRequest(req, res) {
