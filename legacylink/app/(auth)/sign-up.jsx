@@ -24,7 +24,7 @@ export default function SignUpScreen() {
   const onSignUpPress = async () => {
     if (!isLoaded) return
 
-    // Client-side validation
+      // Client-side validation
     if (!isPasswordLongEnough) {
       setError("Password must be at least 8 characters");
       return;
