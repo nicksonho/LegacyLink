@@ -44,12 +44,14 @@ Students often struggle to connect with alumni in niche or emerging sectors like
 ---
 
 ## Core Features Implemented (Milestone 1)
-
+**We focused more on the backend portion and all of our API enpoints coming to this milestone. One all these endpoints are in place , we will shift our focus to the front end. **
 - Backend API endpoints for:
   - POST /api/auth/register
   - POST /api/auth/login
   - GET /api/users, POST, PUT, DELETE
   - GET /api/mentors, POST, PUT, DELETE
+**- More Backend API endpoints for notifications , messages and request. (Please see under src/controllers for logic, src/routes for routes, src/models for all the schemas we have created,) **
+
 - MongoDB integration for persistent data storage
 - Seed script for user data
 - Project is modularized into /routes, /controllers, /models
@@ -60,9 +62,10 @@ Students often struggle to connect with alumni in niche or emerging sectors like
 
 ## Known Challenges
 
-- Misalignment between frontend and backend on Clerk token handling (currently resolving)
+- Misalignment between frontend and backend on Clerk token handling (currently resolving), require more time to solve this issue
 - Delay in setting up Socket.io for real-time messaging due to token-based auth
 - Need for more frontend-backend communication testing in Postman and Expo
+
 
 ---
 
@@ -73,13 +76,16 @@ Students often struggle to connect with alumni in niche or emerging sectors like
 - Create Mentor Directory with filters
 - Display logged-in user profiles
 - Add request-matching functionality based on interests
+- Main Bulk of feauture done
+- E2E testing and prep for deployment
+
+
 
 ---
 
 ## Additional Notes
 
-- Each team member is tracking time and contributions in the Project Log.
-- We aim to meet or exceed the required 140 hours per member.
+- Project Log under the link https://docs.google.com/document/d/1w3JyvZ519LBYqc6Tig7Nn5eUTiExlMnynMNyqhqUU_k/edit?tab=t.0
 
 ---
 
