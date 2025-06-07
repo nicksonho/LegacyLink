@@ -1,7 +1,7 @@
 import express from 'express';
 import { body } from 'express-validator';
 import validate from '../middlewares/validate.js';
-import { protect, authorize } from '../middlewares/auth.js';
+import { requireAuth, authorize, attachUserData } from '../middlewares/clerkAuth.js';
 import {
   getMe,
   getUserById,
@@ -11,15 +11,28 @@ import {
 
 const router = express.Router();
 
-router.use(protect); // all routes below require token
+// All routes require authentication
+router.use(requireAuth);
+router.use(attachUserData);
 
+// Get current user profile
 router.get('/me', getMe);
-router.patch('/me', validate([
-  body('name').optional().notEmpty(),
-  body('bio').optional().isString()
-]), updateMe);
 
+// Update current user profile
+router.patch('/me', 
+  validate([
+    body('name').optional(),
+    body('yearOfStudy').optional().isInt({ min: 1, max: 6 }),
+    body('course').optional(),
+    body('interests').optional().isArray(),
+    body('bio').optional(),
+    body('profilePicUrl').optional().isURL()
+  ]),
+  updateMe
+);
+
+// Admin only routes
 router.get('/', authorize('admin'), getAllUsers);
-router.get('/:id', authorize('admin', 'self'), getUserById);
+router.get('/:id', authorize('admin'), getUserById);
 
 export default router;

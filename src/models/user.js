@@ -1,9 +1,9 @@
 import mongoose from 'mongoose'
 
 const UserSchema = new mongoose.Schema({
+  clerkId: { type: String, required: true, unique: true }, // Clerk user ID
   name: String,
   email: { type: String, unique: true },
-  passwordHash: String,
   yearOfStudy: Number,
   course: String,
   interests: [String],
