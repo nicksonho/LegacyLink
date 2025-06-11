@@ -1,16 +1,21 @@
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 
-const UserSchema = new mongoose.Schema({
-  clerkId: { type: String, required: true, unique: true }, // Clerk user ID
-  name: String,
-  email: { type: String, unique: true },
-  yearOfStudy: Number,
-  course: String,
-  interests: [String],
-  bio: String,
-  profilePicUrl: String,
-  role: { type: String, default: 'student' },
-  createdAt: { type: Date, default: Date.now }
-});
+const UserSchema = new mongoose.Schema(
+  {
+    clerkId: { type: String, required: true, unique: true }, // Clerk user ID
+    name: { type: String, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    yearOfStudy: { type: Number },
+    course: { type: String, trim: true },
+    interests: { type: [String], default: [] },
+    bio: { type: String, trim: true },
+    profilePicUrl: { type: String },
+    role: { type: String, enum: ['student', 'mentor', 'admin'], default: 'student' },
+  },
+  {
+    timestamps: true, // adds createdAt and updatedAt
+  }
+);
 
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+// Use existing model if already compiled (prevents overwrite errors in dev)
+export default mongoose.models.User || mongoose.model('User', UserSchema);
