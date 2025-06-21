@@ -13,5 +13,5 @@ export default function RootLayout() {
         <Slot />
       </SafeScreen>
     </ClerkProvider>
-  );
+  );Is 
 }

@@ -73,7 +73,7 @@ export default function OnboardingPage() {
 
       const data = await res.json();
       console.log("✅ Backend responded with:", data);
-      router.replace("/");
+      router.replace("/profile"); // or whatever your Profile route path is
 
     } catch (e) {
       console.error("Onboarding error:", e);
