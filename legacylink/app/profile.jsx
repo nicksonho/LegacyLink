@@ -11,7 +11,7 @@ import {
   StyleSheet,
 } from "react-native";
 
-// ✅ Use your computer's local IP address (update this if it changes)
+// Replace with your current local IP if needed
 const API_URL = "http://192.168.10.235:3000";
 
 export default function Profile() {
@@ -46,13 +46,21 @@ export default function Profile() {
   const handleUpdate = async () => {
     try {
       const token = await getToken();
+
+      // Protect against NaN or blank values
+      const safeData = {
+        ...userData,
+        yearOfStudy:
+          userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
+      };
+
       const res = await fetch(`${API_URL}/api/users/me`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(safeData),
       });
 
       if (!res.ok) throw new Error("Failed to update profile");
@@ -70,7 +78,9 @@ export default function Profile() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Image
-        source={{ uri: userData.profilePicUrl || "https://via.placeholder.com/150" }}
+        source={{
+          uri: userData.profilePicUrl || "https://via.placeholder.com/150",
+        }}
         style={styles.avatar}
       />
 
@@ -105,16 +115,28 @@ export default function Profile() {
             placeholder="Course"
           />
           <TextInput
-            value={String(userData.yearOfStudy)}
-            onChangeText={(text) => setUserData({ ...userData, yearOfStudy: parseInt(text) })}
+            value={
+              userData.yearOfStudy === undefined || userData.yearOfStudy === null
+                ? ""
+                : String(userData.yearOfStudy)
+            }
+            onChangeText={(text) =>
+              setUserData({
+                ...userData,
+                yearOfStudy: text === "" ? "" : text, // Keep as string for now
+              })
+            }
             style={styles.input}
             placeholder="Year of Study"
             keyboardType="numeric"
           />
           <TextInput
-            value={userData.interests.join(", ")}
+            value={userData.interests?.join(", ") || ""}
             onChangeText={(text) =>
-              setUserData({ ...userData, interests: text.split(",").map(i => i.trim()) })
+              setUserData({
+                ...userData,
+                interests: text.split(",").map((i) => i.trim()),
+              })
             }
             style={styles.input}
             placeholder="Interests (comma-separated)"
@@ -122,9 +144,11 @@ export default function Profile() {
         </>
       ) : (
         <View style={styles.infoBox}>
-          <Text style={styles.infoText}>📚 {userData.course} • Year {userData.yearOfStudy}</Text>
+          <Text style={styles.infoText}>
+            📚 {userData.course} • Year {userData.yearOfStudy}
+          </Text>
           <View style={styles.chipContainer}>
-            {userData.interests.map((tag, i) => (
+            {userData.interests?.map((tag, i) => (
               <View key={i} style={styles.chip}>
                 <Text style={styles.chipText}>{tag}</Text>
               </View>
@@ -137,7 +161,9 @@ export default function Profile() {
         onPress={isEditing ? handleUpdate : () => setIsEditing(true)}
         style={styles.button}
       >
-        <Text style={styles.buttonText}>{isEditing ? "Save Changes" : "Edit Profile"}</Text>
+        <Text style={styles.buttonText}>
+          {isEditing ? "Save Changes" : "Edit Profile"}
+        </Text>
       </TouchableOpacity>
     </ScrollView>
   );
