@@ -1,45 +1,36 @@
-import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node';
+import { ClerkExpressWithAuth } from '@clerk/clerk-sdk-node';
+import User from '../models/user.js';
 
-// Middleware to verify Clerk session token
-export const requireAuth = ClerkExpressRequireAuth();
+export const requireAuth = ClerkExpressWithAuth();
 
-// Middleware to check user roles
+// Optional: restrict access by user role
 export const authorize = (...roles) => {
   return (req, res, next) => {
-    // Clerk adds the user to req.auth
-    const userRole = req.auth?.user?.publicMetadata?.role;
-    
-    if (!userRole || !roles.includes(userRole)) {
-      return res.status(403).json({ 
-        message: 'Access denied: insufficient role' 
-      });
+    const role = req.auth?.user?.publicMetadata?.role;
+    if (!role || !roles.includes(role)) {
+      return res.status(403).json({ message: 'Access denied: insufficient role' });
     }
-    
     next();
   };
 };
 
-// Middleware to get user data from our database
+// Attach user from MongoDB to req.user
 export const attachUserData = async (req, res, next) => {
   try {
     const clerkUserId = req.auth?.userId;
-    
     if (!clerkUserId) {
       return res.status(401).json({ message: 'No user ID found' });
     }
 
-    // Find user in our database using Clerk's user ID
     const user = await User.findOne({ clerkId: clerkUserId });
-    
     if (!user) {
       return res.status(404).json({ message: 'User not found in database' });
     }
 
-    // Attach user data to request
     req.user = user;
     next();
   } catch (err) {
-    console.error('Error attaching user data:', err);
+    console.error("Error attaching user data:", err);
     res.status(500).json({ message: 'Internal server error' });
   }
-}; 
+};
