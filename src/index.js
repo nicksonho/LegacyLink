@@ -18,7 +18,7 @@ async function start() {
   // Auth (signup, signin, etc.)
   app.use('/api/auth', authRoutes);
 
-  // User CRUD (protected by clerkAuth)
+  // for profile.jsx
   app.use('/api/users', userRoutes);
 
   app.listen(PORT, () =>

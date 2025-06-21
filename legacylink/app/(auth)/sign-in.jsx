@@ -1,60 +1,49 @@
-import { useSignIn, useAuth } from '@clerk/clerk-expo'
-import { Link, useRouter } from 'expo-router'
-import { Text, TextInput, TouchableOpacity, View, Image } from 'react-native'
-import { useState } from 'react'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import { styles } from "@/assets/styles/auth.styles"
-import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from "@/constants/colors"
-
-const API_URL = 'http://<replace it with my compiter IP REMIND ME NICKSON>:3001';
+import { useSignIn, useAuth } from '@clerk/clerk-expo';
+import { Link, useRouter } from 'expo-router';
+import { Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { styles } from "@/assets/styles/auth.styles";
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from "@/constants/colors";
 
 export default function Page() {
-  const { signIn, setActive, isLoaded } = useSignIn()
-  const router = useRouter()
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const router = useRouter();
 
-  const [emailAddress, setEmailAddress] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState("")
+  const [emailAddress, setEmailAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState("");
 
   const onSignInPress = async () => {
-    if (!isLoaded) return
+    if (!isLoaded) return;
 
     try {
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
         password,
-      })
+      });
 
       if (signInAttempt.status === 'complete') {
-        await setActive({ session: signInAttempt.createdSessionId })
-        router.replace('/')
+        await setActive({ session: signInAttempt.createdSessionId });
+        router.replace('/profile');
       } else {
-        console.error(JSON.stringify(signInAttempt, null, 2))
+        console.error(JSON.stringify(signInAttempt, null, 2));
       }
     } catch (err) {
       if (err.errors?.[0]?.code === "form_password_incorrect") {
-        setError("Password incorrect")
+        setError("Password incorrect");
       } else {
-        setError("An error occurred")
+        setError("An error occurred");
       }
     }
-  }
+  };
 
   return (
-    <KeyboardAwareScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      enableOnAndroid
-      enableAutomaticScroll
-    >
-
+    <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} enableOnAndroid enableAutomaticScroll>
       <View style={styles.container}>
         <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-          <Image
-            source={require("@/assets/images/legacy-link-logo-brown.png")}
-            style={styles.illustration}
-          />
+          <Image source={require("@/assets/images/legacy-link-logo-brown.png")} style={styles.illustration} />
         </View>
 
         <Text style={styles.title}>Sign in</Text>
@@ -101,5 +90,5 @@ export default function Page() {
         </View>
       </View>
     </KeyboardAwareScrollView>
-  )
+  );
 }
