@@ -10,8 +10,10 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
+import Toast from "react-native-toast-message";
 
-// Replace with your current local IP if needed
 const API_URL = "http://192.168.10.235:3000";
 
 export default function Profile() {
@@ -43,11 +45,23 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setUserData({ ...userData, profilePicUrl: result.assets[0].uri });
+    }
+  };
+
   const handleUpdate = async () => {
     try {
       const token = await getToken();
 
-      // Protect against NaN or blank values
       const safeData = {
         ...userData,
         yearOfStudy:
@@ -66,7 +80,11 @@ export default function Profile() {
       if (!res.ok) throw new Error("Failed to update profile");
 
       setIsEditing(false);
-      alert("✅ Profile updated!");
+      Toast.show({
+        type: "success",
+        text1: "Profile updated!",
+        text2: "Your changes have been saved 🎉",
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -76,150 +94,167 @@ export default function Profile() {
   if (error) return <Text style={styles.error}>{error}</Text>;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Image
-        source={{
-          uri: userData.profilePicUrl || "https://via.placeholder.com/150",
-        }}
-        style={styles.avatar}
-      />
+    <LinearGradient colors={["#fffaf5", "#fbe0c3"]} style={styles.container}>
+      <Text style={styles.header}>Welcome to <Text style={{ color: "#744d32" }}>LegacyLink</Text> ✨</Text>
 
-      {isEditing ? (
-        <>
-          <TextInput
-            value={userData.name}
-            onChangeText={(text) => setUserData({ ...userData, name: text })}
-            style={styles.input}
-            placeholder="Name"
+      <View style={styles.card}>
+        <TouchableOpacity onPress={pickImage}>
+          <Image
+            source={{ uri: userData.profilePicUrl || "https://via.placeholder.com/150" }}
+            style={styles.avatar}
           />
-          <TextInput
-            value={userData.bio}
-            onChangeText={(text) => setUserData({ ...userData, bio: text })}
-            style={styles.input}
-            placeholder="Bio"
-          />
-        </>
-      ) : (
-        <>
-          <Text style={styles.name}>{userData.name}</Text>
-          <Text style={styles.bio}>{userData.bio}</Text>
-        </>
-      )}
+          <Text style={styles.tapToChange}>📸 Tap to change</Text>
+        </TouchableOpacity>
 
-      {isEditing ? (
-        <>
-          <TextInput
-            value={userData.course}
-            onChangeText={(text) => setUserData({ ...userData, course: text })}
-            style={styles.input}
-            placeholder="Course"
-          />
-          <TextInput
-            value={
-              userData.yearOfStudy === undefined || userData.yearOfStudy === null
-                ? ""
-                : String(userData.yearOfStudy)
-            }
-            onChangeText={(text) =>
-              setUserData({
-                ...userData,
-                yearOfStudy: text === "" ? "" : text, // Keep as string for now
-              })
-            }
-            style={styles.input}
-            placeholder="Year of Study"
-            keyboardType="numeric"
-          />
-          <TextInput
-            value={userData.interests?.join(", ") || ""}
-            onChangeText={(text) =>
-              setUserData({
-                ...userData,
-                interests: text.split(",").map((i) => i.trim()),
-              })
-            }
-            style={styles.input}
-            placeholder="Interests (comma-separated)"
-          />
-        </>
-      ) : (
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            📚 {userData.course} • Year {userData.yearOfStudy}
-          </Text>
-          <View style={styles.chipContainer}>
-            {userData.interests?.map((tag, i) => (
-              <View key={i} style={styles.chip}>
-                <Text style={styles.chipText}>{tag}</Text>
-              </View>
-            ))}
+        {isEditing ? (
+          <>
+            <TextInput
+              value={userData.name}
+              onChangeText={(text) => setUserData({ ...userData, name: text })}
+              style={styles.input}
+              placeholder="Name"
+            />
+            <TextInput
+              value={userData.bio}
+              onChangeText={(text) => setUserData({ ...userData, bio: text })}
+              style={styles.input}
+              placeholder="Bio"
+            />
+          </>
+        ) : (
+          <>
+            <Text style={styles.name}>{userData.name}</Text>
+            <Text style={styles.bio}>{userData.bio}</Text>
+          </>
+        )}
+
+        {isEditing ? (
+          <>
+            <TextInput
+              value={userData.course}
+              onChangeText={(text) => setUserData({ ...userData, course: text })}
+              style={styles.input}
+              placeholder="Course"
+            />
+            <TextInput
+              value={userData.yearOfStudy === undefined || userData.yearOfStudy === null ? "" : String(userData.yearOfStudy)}
+              onChangeText={(text) =>
+                setUserData({ ...userData, yearOfStudy: text === "" ? "" : text })
+              }
+              style={styles.input}
+              placeholder="Year of Study"
+              keyboardType="numeric"
+            />
+            <TextInput
+              value={userData.interests?.join(", ") || ""}
+              onChangeText={(text) =>
+                setUserData({
+                  ...userData,
+                  interests: text.split(",").map((i) => i.trim()),
+                })
+              }
+              style={styles.input}
+              placeholder="Interests (comma-separated)"
+            />
+          </>
+        ) : (
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>📚 {userData.course} • Year {userData.yearOfStudy}</Text>
+            <View style={styles.chipContainer}>
+              {userData.interests?.map((tag, i) => (
+                <View key={i} style={styles.chip}>
+                  <Text style={styles.chipText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
-      )}
+        )}
 
-      <TouchableOpacity
-        onPress={isEditing ? handleUpdate : () => setIsEditing(true)}
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>
-          {isEditing ? "Save Changes" : "Edit Profile"}
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          onPress={isEditing ? handleUpdate : () => setIsEditing(true)}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>{isEditing ? "Save Changes" : "Edit Profile"}</Text>
+        </TouchableOpacity>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
+    paddingTop: 60,
+    paddingBottom: 40,
     alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    backgroundColor: "#fffaf5",
-    minHeight: "100%",
+  },
+  header: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 20,
+    color: "#5e3c2b",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    width: "90%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 4,
   },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    marginBottom: 20,
     backgroundColor: "#eee",
   },
+  tapToChange: {
+    textAlign: "center",
+    marginTop: 6,
+    color: "#777",
+    fontSize: 13,
+  },
   name: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
+    color: "#333",
+    marginTop: 16,
   },
   bio: {
     fontSize: 14,
-    color: "gray",
+    color: "#777",
     fontStyle: "italic",
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 16,
   },
   infoBox: {
-    width: "100%",
-    marginVertical: 20,
     alignItems: "center",
+    marginVertical: 16,
   },
   infoText: {
     fontSize: 16,
-    marginBottom: 12,
     fontWeight: "500",
+    color: "#444",
+    marginBottom: 10,
   },
   chipContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 8,
   },
   chip: {
-    backgroundColor: "#333",
+    backgroundColor: "#3a2e25",
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 16,
     margin: 4,
   },
   chipText: {
-    color: "white",
+    color: "#fff",
     fontSize: 12,
   },
   input: {
@@ -235,7 +270,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 10,
-    marginTop: 20,
+    marginTop: 10,
   },
   buttonText: {
     color: "white",
