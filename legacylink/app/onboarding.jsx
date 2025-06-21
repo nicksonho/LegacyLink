@@ -1,5 +1,3 @@
-// app/(auth)/onboarding.jsx
-
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import {
@@ -44,6 +42,9 @@ export default function OnboardingPage() {
   const onComplete = async () => {
     try {
       const token = await getToken();
+      console.log("📤 Sending profile:", profile);
+      console.log("🔐 Clerk token preview:", token?.slice(0, 10) + "...");
+
       const res = await fetch(`${API_URL}/api/auth/signup`, {
         method: "POST",
         headers: {
@@ -56,25 +57,37 @@ export default function OnboardingPage() {
           interests: profile.interests.split(",").map((s) => s.trim()),
         }),
       });
+
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+        let errMsg = "Unexpected error.";
+        try {
+          const err = await res.json();
+          errMsg = err.message || errMsg;
+        } catch (e) {
+          const text = await res.text();
+          console.error("🧨 Non-JSON server response:", text);
+          errMsg = text;
+        }
+        throw new Error(errMsg);
       }
+
+      const data = await res.json();
+      console.log("✅ Backend responded with:", data);
       router.replace("/");
+
     } catch (e) {
       console.error("Onboarding error:", e);
       setError(e.message);
     }
   };
 
-  // define your fields once
   const fields = [
-    { key: "name",          label: "Full Name",                 placeholder: "e.g. Jane Doe",         keyboardType: "default" },
-    { key: "yearOfStudy",   label: "Year of Study",             placeholder: "e.g. 3",               keyboardType: "numeric" },
+    { key: "name",          label: "Full Name",                 placeholder: "e.g. Jane Doe",           keyboardType: "default" },
+    { key: "yearOfStudy",   label: "Year of Study",             placeholder: "e.g. 3",                  keyboardType: "numeric" },
     { key: "course",        label: "Course",                    placeholder: "e.g. Information Systems",keyboardType: "default" },
-    { key: "interests",     label: "Interests (comma-separated)",placeholder: "tech, fashion, music", keyboardType: "default", multiline: true },
-    { key: "bio",           label: "Short Bio",                 placeholder: "Tell us about yourself", keyboardType: "default", multiline: true },
-    { key: "profilePicUrl", label: "Profile Pic URL",           placeholder: "https://...",           keyboardType: "default" },
+    { key: "interests",     label: "Interests (comma-separated)",placeholder: "tech, fashion, music",   keyboardType: "default", multiline: true },
+    { key: "bio",           label: "Short Bio",                 placeholder: "Tell us about yourself",  keyboardType: "default", multiline: true },
+    { key: "profilePicUrl", label: "Profile Pic URL",           placeholder: "https://...",             keyboardType: "default" },
   ];
 
   return (
