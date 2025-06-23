@@ -3,20 +3,24 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // ← first, the Expo Router plugin:
+      // 1) Expo Router integration:
       ['expo-router/babel', { 
-        // tells it where to find your “app/” folder
         roots: ['app']
       }],
 
-      // ← then your module‐resolver alias (if you still need it):
+      // 2) Your aliases (if you still need them):
       [
         'module-resolver',
         {
           root: ['.'],
-          alias: { '@': './' },
+          alias: { 
+            '@': './' 
+          },
         },
       ],
+
+      // 3) **React Native Reanimated must come last**
+      'react-native-reanimated/plugin',
     ],
   };
 };

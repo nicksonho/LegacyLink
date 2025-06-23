@@ -17,21 +17,22 @@ import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
 import * as Animatable from "react-native-animatable";
 import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
-// Read your backend URL from Expo config extra
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 const TOTAL_FIELDS = 5;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function Profile() {
   const { getToken } = useAuth();
+  const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -51,7 +52,6 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  // Animate progress bar based on filled fields
   useEffect(() => {
     if (!userData) return;
     const filledCount = [
@@ -69,7 +69,6 @@ export default function Profile() {
     }).start();
   }, [userData]);
 
-  // Show skeleton while loading
   if (loading) {
     return (
       <View style={styles.skeletonContainer}>
@@ -87,13 +86,11 @@ export default function Profile() {
   }
   if (error) return <Text style={styles.error}>{error}</Text>;
 
-  // Haptic helper
   const handlePress = async (action) => {
     await Haptics.selectionAsync();
     action();
   };
 
-  // Image picker
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -110,7 +107,6 @@ export default function Profile() {
     }
   };
 
-  // Save profile updates
   const handleUpdate = async () => {
     try {
       const token = await getToken();
@@ -142,11 +138,23 @@ export default function Profile() {
 
   return (
     <LinearGradient colors={["#fffaf5", "#fbe0c3"]} style={styles.container}>
+      {/* 🔙 Back Button */}
+      <TouchableOpacity
+        onPress={() => router.push('/home')}
+        style={styles.backButton}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="arrow-back" size={24} color="#744d32" />
+      </TouchableOpacity>
+
+      {/* Progress bar */}
       <View style={styles.progressBarBackground}>
         <Animated.View
           style={[styles.progressBarFill, { width: progressAnim }]}
         />
       </View>
+
+      {/* Main content */}
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -181,23 +189,8 @@ export default function Profile() {
           {renderField("Name", "name", userData, setUserData, isEditing)}
           {renderField("Bio", "bio", userData, setUserData, isEditing)}
           {renderField("Course", "course", userData, setUserData, isEditing)}
-          {renderField(
-            "Year of Study",
-            "yearOfStudy",
-            userData,
-            setUserData,
-            isEditing,
-            true
-          )}
-          {renderField(
-            "Interests",
-            "interests",
-            userData,
-            setUserData,
-            isEditing,
-            false,
-            true
-          )}
+          {renderField("Year of Study", "yearOfStudy", userData, setUserData, isEditing, true)}
+          {renderField("Interests", "interests", userData, setUserData, isEditing, false, true)}
 
           <Animatable.View
             animation={isEditing ? "pulse" : "bounce"}
@@ -301,4 +294,18 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: 'white', fontSize: 16, fontWeight: '600' },
   error: { textAlign: 'center', color: 'red', marginTop: 100 },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
+  },
 });
