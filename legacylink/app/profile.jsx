@@ -6,12 +6,12 @@ import {
   Text,
   Image,
   TextInput,
-  ScrollView,
   TouchableOpacity,
   Animated,
   StyleSheet,
   Dimensions,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
@@ -147,20 +147,21 @@ export default function Profile() {
         <Ionicons name="arrow-back" size={24} color="#744d32" />
       </TouchableOpacity>
 
-      {/* Progress bar */}
+      {/* 📊 Progress bar */}
       <View style={styles.progressBarBackground}>
-        <Animated.View
-          style={[styles.progressBarFill, { width: progressAnim }]}
-        />
+        <Animated.View style={[styles.progressBarFill, { width: progressAnim }]} />
       </View>
 
-      {/* Main content */}
-      <ScrollView
+      {/* 🧾 Scrollable content with keyboard support */}
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={80}
+        keyboardShouldPersistTaps="handled"
       >
         <Animatable.Text animation="fadeInDown" delay={200} style={styles.header}>
-          Welcome to <Text style={{ color: "#744d32" }}>LegacyLink</Text> ✨
+          Your Profile
         </Animatable.Text>
 
         <Animatable.View
@@ -210,7 +211,7 @@ export default function Profile() {
             </TouchableOpacity>
           </Animatable.View>
         </Animatable.View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </LinearGradient>
   );
 }
