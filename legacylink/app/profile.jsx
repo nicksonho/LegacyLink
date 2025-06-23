@@ -13,8 +13,11 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
+import Constants from 'expo-constants';
 
-const API_URL = "http://192.168.10.235:3000";
+const API_URL =
+  Constants.expoConfig?.extra?.apiUrl ??
+  Constants.manifest?.extra?.apiUrl;
 
 export default function Profile() {
   const { getToken } = useAuth();
@@ -63,10 +66,18 @@ export default function Profile() {
       const token = await getToken();
 
       const safeData = {
-        ...userData,
-        yearOfStudy:
-          userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
-      };
+              name: userData.name,
+              bio: userData.bio,
+              course: userData.course,
+              interests: userData.interests,
+              yearOfStudy:
+                userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
+            };
+
+            // Only send image if it's already a remote URL
+            if (userData.profilePicUrl?.startsWith("http")) {
+              safeData.profilePicUrl = userData.profilePicUrl;
+            }
 
       const res = await fetch(`${API_URL}/api/users/me`, {
         method: "PATCH",

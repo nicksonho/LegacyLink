@@ -13,9 +13,14 @@ import { useState } from "react";
 import { Picker } from "@react-native-picker/picker";
 import { styles } from "@/assets/styles/auth.styles";
 import { COLORS } from "@/constants/colors";
+import Constants from 'expo-constants';
+import HomePage from "./home";
 
-// Use your Mac’s IP and the port (3000) your backend listens on:
-const API_URL = "http://192.168.10.235:3000";
+// Use your Mac's IP and the port (3000) your backend listens on:
+// const API_URL = process.env.API_URL;
+
+const API_URL =
+  Constants.expoConfig?.extra?.apiUrl;
 
 const initialProfile = {
   name: "",
@@ -73,7 +78,7 @@ export default function OnboardingPage() {
 
       const data = await res.json();
       console.log("✅ Backend responded with:", data);
-      router.replace("/profile"); // or whatever your Profile route path is
+      router.replace("/home"); // Redirect to custom home page after onboarding
 
     } catch (e) {
       console.error("Onboarding error:", e);
