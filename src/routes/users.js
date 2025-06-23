@@ -19,10 +19,10 @@ const router = express.Router();
 router.use(requireAuth);
 router.use(attachUserData);
 
-//  Get current user's profile
+// 🔒 Get current user's profile
 router.get('/me', getMe);
 
-//  Update current user's profile
+// 🔧 Update current user's profile
 router.patch(
   '/me',
   validate([

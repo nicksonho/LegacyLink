@@ -1,23 +1,27 @@
+import Constants from 'expo-constants';
 import { useAuth } from "@clerk/clerk-expo";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
   Image,
   TextInput,
-  // ScrollView,
+  ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
+  Animated,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
-import Constants from 'expo-constants';
+import * as Animatable from "react-native-animatable";
+import * as Haptics from "expo-haptics";
 
-const API_URL =
-  Constants.expoConfig?.extra?.apiUrl ??
-  Constants.manifest?.extra?.apiUrl;
+// Read your backend URL from Expo config extra
+const API_URL = Constants.expoConfig?.extra?.apiUrl;
+const TOTAL_FIELDS = 5;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function Profile() {
   const { getToken } = useAuth();
@@ -25,7 +29,9 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
+  // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -33,9 +39,7 @@ export default function Profile() {
         const res = await fetch(`${API_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (!res.ok) throw new Error("Failed to load profile");
-
+        if (!res.ok) throw new Error(`Failed to load profile [${res.status}]`);
         const data = await res.json();
         setUserData(data);
       } catch (err) {
@@ -44,252 +48,257 @@ export default function Profile() {
         setLoading(false);
       }
     };
-
     fetchProfile();
-  }, [getToken]);
+  }, []);
 
+  // Animate progress bar based on filled fields
+  useEffect(() => {
+    if (!userData) return;
+    const filledCount = [
+      userData.name,
+      userData.bio,
+      userData.course,
+      userData.yearOfStudy,
+      userData.interests?.length ? userData.interests : null,
+    ].filter(Boolean).length;
+    const targetWidth = (filledCount / TOTAL_FIELDS) * SCREEN_WIDTH;
+    Animated.timing(progressAnim, {
+      toValue: targetWidth,
+      duration: 800,
+      useNativeDriver: false,
+    }).start();
+  }, [userData]);
+
+  // Show skeleton while loading
+  if (loading) {
+    return (
+      <View style={styles.skeletonContainer}>
+        {[...Array(TOTAL_FIELDS + 1)].map((_, i) => (
+          <Animatable.View
+            key={i}
+            animation="pulse"
+            iterationCount="infinite"
+            delay={i * 100}
+            style={styles.skeletonBubble}
+          />
+        ))}
+      </View>
+    );
+  }
+  if (error) return <Text style={styles.error}>{error}</Text>;
+
+  // Haptic helper
+  const handlePress = async (action) => {
+    await Haptics.selectionAsync();
+    action();
+  };
+
+  // Image picker
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setUserData({ ...userData, profilePicUrl: result.assets[0].uri });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+      if (!result.canceled) {
+        setUserData({ ...userData, profilePicUrl: result.assets[0].uri });
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
+  // Save profile updates
   const handleUpdate = async () => {
     try {
       const token = await getToken();
-
-      const safeData = {
-              name: userData.name,
-              bio: userData.bio,
-              course: userData.course,
-              interests: userData.interests,
-              yearOfStudy:
-                userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
-            };
-
-            // Only send image if it's already a remote URL
-            if (userData.profilePicUrl?.startsWith("http")) {
-              safeData.profilePicUrl = userData.profilePicUrl;
-            }
-
+      const payload = {
+        ...userData,
+        yearOfStudy:
+          userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
+      };
       const res = await fetch(`${API_URL}/api/users/me`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(safeData),
+        body: JSON.stringify(payload),
       });
-
-      if (!res.ok) throw new Error("Failed to update profile");
-
+      if (!res.ok) throw new Error(`Failed to update profile [${res.status}]`);
       setIsEditing(false);
       Toast.show({
         type: "success",
-        text1: "Profile updated!",
-        text2: "Your changes have been saved 🎉",
+        text1: "✅ Profile updated",
+        text2: "Your changes were saved successfully.",
       });
     } catch (err) {
       setError(err.message);
+      Animatable.shake(styles.cardRef);
     }
   };
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 100 }} />;
-  if (error) return <Text style={styles.error}>{error}</Text>;
-
   return (
     <LinearGradient colors={["#fffaf5", "#fbe0c3"]} style={styles.container}>
-      <Text style={styles.header}>Welcome to <Text style={{ color: "#744d32" }}>LegacyLink</Text> ✨</Text>
-
-      <View style={styles.card}>
-        <TouchableOpacity onPress={pickImage}>
-          <Image
-            source={{ uri: userData.profilePicUrl || "https://via.placeholder.com/150" }}
-            style={styles.avatar}
-          />
-          <Text style={styles.tapToChange}>📸 Tap to change</Text>
-        </TouchableOpacity>
-
-        {isEditing ? (
-          <>
-            <TextInput
-              value={userData.name}
-              onChangeText={(text) => setUserData({ ...userData, name: text })}
-              style={styles.input}
-              placeholder="Name"
-            />
-            <TextInput
-              value={userData.bio}
-              onChangeText={(text) => setUserData({ ...userData, bio: text })}
-              style={styles.input}
-              placeholder="Bio"
-            />
-          </>
-        ) : (
-          <>
-            <Text style={styles.name}>{userData.name}</Text>
-            <Text style={styles.bio}>{userData.bio}</Text>
-          </>
-        )}
-
-        {isEditing ? (
-          <>
-            <TextInput
-              value={userData.course}
-              onChangeText={(text) => setUserData({ ...userData, course: text })}
-              style={styles.input}
-              placeholder="Course"
-            />
-            <TextInput
-              value={userData.yearOfStudy === undefined || userData.yearOfStudy === null ? "" : String(userData.yearOfStudy)}
-              onChangeText={(text) =>
-                setUserData({ ...userData, yearOfStudy: text === "" ? "" : text })
-              }
-              style={styles.input}
-              placeholder="Year of Study"
-              keyboardType="numeric"
-            />
-            <TextInput
-              value={userData.interests?.join(", ") || ""}
-              onChangeText={(text) =>
-                setUserData({
-                  ...userData,
-                  interests: text.split(",").map((i) => i.trim()),
-                })
-              }
-              style={styles.input}
-              placeholder="Interests (comma-separated)"
-            />
-          </>
-        ) : (
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>📚 {userData.course} • Year {userData.yearOfStudy}</Text>
-            <View style={styles.chipContainer}>
-              {userData.interests?.map((tag, i) => (
-                <View key={i} style={styles.chip}>
-                  <Text style={styles.chipText}>{tag}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <TouchableOpacity
-          onPress={isEditing ? handleUpdate : () => setIsEditing(true)}
-          style={styles.button}
-        >
-          <Text style={styles.buttonText}>{isEditing ? "Save Changes" : "Edit Profile"}</Text>
-        </TouchableOpacity>
+      <View style={styles.progressBarBackground}>
+        <Animated.View
+          style={[styles.progressBarFill, { width: progressAnim }]}
+        />
       </View>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animatable.Text animation="fadeInDown" delay={200} style={styles.header}>
+          Welcome to <Text style={{ color: "#744d32" }}>LegacyLink</Text> ✨
+        </Animatable.Text>
+
+        <Animatable.View
+          ref={(ref) => (styles.cardRef = ref)}
+          animation="fadeInUp"
+          delay={400}
+          style={styles.card}
+        >
+          <TouchableOpacity
+            onPress={() => handlePress(pickImage)}
+            style={styles.avatarContainer}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={["#d6a17d", "#744d32"]}
+              style={styles.avatarBorder}
+            >
+              <Image
+                source={{ uri: userData.profilePicUrl || "https://via.placeholder.com/150" }}
+                style={styles.avatar}
+              />
+            </LinearGradient>
+            <Text style={styles.tapToChange}>📸 Tap to change</Text>
+          </TouchableOpacity>
+
+          {renderField("Name", "name", userData, setUserData, isEditing)}
+          {renderField("Bio", "bio", userData, setUserData, isEditing)}
+          {renderField("Course", "course", userData, setUserData, isEditing)}
+          {renderField(
+            "Year of Study",
+            "yearOfStudy",
+            userData,
+            setUserData,
+            isEditing,
+            true
+          )}
+          {renderField(
+            "Interests",
+            "interests",
+            userData,
+            setUserData,
+            isEditing,
+            false,
+            true
+          )}
+
+          <Animatable.View
+            animation={isEditing ? "pulse" : "bounce"}
+            iterationCount={isEditing ? 1 : 2}
+            style={{ marginTop: 20 }}
+          >
+            <TouchableOpacity
+              onPress={() =>
+                handlePress(isEditing ? handleUpdate : () => setIsEditing(true))
+              }
+              style={styles.button}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>
+                {isEditing ? '💾 Save Changes' : '✏️ Edit Profile'}
+              </Text>
+            </TouchableOpacity>
+          </Animatable.View>
+        </Animatable.View>
+      </ScrollView>
     </LinearGradient>
   );
 }
 
+function renderField(
+  label,
+  key,
+  userData,
+  setUserData,
+  isEditing,
+  isNumeric = false,
+  isArray = false
+) {
+  return (
+    <Animatable.View animation="fadeInUp" delay={600} style={styles.bubble}>
+      <Text style={styles.bubbleLabel}>{label}</Text>
+      <TextInput
+        value={
+          isArray
+            ? userData[key]?.join(', ') || ''
+            : userData[key] === undefined || userData[key] === null
+            ? ''
+            : String(userData[key])
+        }
+        editable={isEditing}
+        onChangeText={(text) => {
+          const updatedValue =
+            isArray ? text.split(',').map((i) => i.trim()) : text;
+          setUserData({ ...userData, [key]: updatedValue });
+        }}
+        style={styles.input}
+        placeholder={label}
+        placeholderTextColor="#aaa"
+        keyboardType={isNumeric ? 'numeric' : 'default'}
+      />
+    </Animatable.View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingTop: 60,
-    paddingBottom: 40,
-    alignItems: "center",
-  },
+  container: { flex: 1 },
+  progressBarBackground: { height: 4, backgroundColor: '#eee', width: '100%' },
+  progressBarFill: { height: 4, backgroundColor: '#744d32' },
+  scroll: { paddingBottom: 40, paddingHorizontal: 20 },
   header: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: '700',
+    marginTop: 60,
     marginBottom: 20,
-    color: "#5e3c2b",
+    textAlign: 'center',
+    color: '#5e3c2b',
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 24,
-    width: "90%",
-    alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
-    elevation: 4,
+    elevation: 6,
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#eee",
-  },
-  tapToChange: {
-    textAlign: "center",
-    marginTop: 6,
-    color: "#777",
-    fontSize: 13,
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 16,
-  },
-  bio: {
-    fontSize: 14,
-    color: "#777",
-    fontStyle: "italic",
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  infoBox: {
-    alignItems: "center",
-    marginVertical: 16,
-  },
-  infoText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#444",
-    marginBottom: 10,
-  },
-  chipContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-  chip: {
-    backgroundColor: "#3a2e25",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    margin: 4,
-  },
-  chipText: {
-    color: "#fff",
-    fontSize: 12,
-  },
-  input: {
-    width: "100%",
-    padding: 12,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
+  skeletonContainer: { flex: 1, padding: 20 },
+  skeletonBubble: { height: 50, backgroundColor: '#eee', borderRadius: 14, marginBottom: 20 },
+  avatarContainer: { alignItems: 'center', marginBottom: 20 },
+  avatarBorder: { padding: 3, borderRadius: 65 },
+  avatar: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#eee' },
+  tapToChange: { textAlign: 'center', marginTop: 6, color: '#777', fontSize: 13 },
+  bubble: { marginTop: 20 },
+  bubbleLabel: { fontWeight: '600', color: '#744d32', fontSize: 13, marginBottom: 6 },
+  input: { backgroundColor: '#f5f5f5', padding: 14, borderRadius: 14, fontSize: 15 },
   button: {
-    backgroundColor: "#5e3c2b",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    marginTop: 10,
+    backgroundColor: '#744d32',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
-  },
-  error: {
-    textAlign: "center",
-    color: "red",
-    marginTop: 100,
-  },
+  buttonText: { color: 'white', fontSize: 16, fontWeight: '600' },
+  error: { textAlign: 'center', color: 'red', marginTop: 100 },
 });
