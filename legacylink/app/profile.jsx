@@ -5,7 +5,7 @@ import {
   Text,
   Image,
   TextInput,
-  ScrollView,
+  // ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
@@ -46,7 +46,7 @@ export default function Profile() {
     };
 
     fetchProfile();
-  }, []);
+  }, [getToken]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({

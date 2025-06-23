@@ -14,13 +14,8 @@ import { Picker } from "@react-native-picker/picker";
 import { styles } from "@/assets/styles/auth.styles";
 import { COLORS } from "@/constants/colors";
 import Constants from 'expo-constants';
-import HomePage from "./home";
 
-// Use your Mac's IP and the port (3000) your backend listens on:
-// const API_URL = process.env.API_URL;
-
-const API_URL =
-  Constants.expoConfig?.extra?.apiUrl;
+const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
 const initialProfile = {
   name: "",
@@ -68,7 +63,7 @@ export default function OnboardingPage() {
         try {
           const err = await res.json();
           errMsg = err.message || errMsg;
-        } catch (e) {
+        } catch (_e) {
           const text = await res.text();
           console.error("🧨 Non-JSON server response:", text);
           errMsg = text;
