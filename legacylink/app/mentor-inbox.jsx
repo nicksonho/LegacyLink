@@ -66,7 +66,7 @@ export default function MentorInbox() {
         <Ionicons name="arrow-back" size={24} color="#744d32" />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Incoming Requests 📬</Text>
+      <Text style={styles.title}>Incoming Requests </Text>
 
       {loading ? (
         <ActivityIndicator size="large" color="#744d32" style={{ marginTop: 40 }} />
@@ -79,7 +79,7 @@ export default function MentorInbox() {
               <Text style={styles.name}>{req.sender.name}</Text>
               <Text style={styles.text}>{req.sender.course} • Year {req.sender.yearOfStudy}</Text>
               <Text style={styles.text}>{req.sender.bio}</Text>
-              <Text style={styles.message}>📝 {req.message}</Text>
+              <Text style={styles.message}> {req.message}</Text>
 
               {req.status === 'pending' ? (
                 <View style={styles.actions}>
@@ -87,18 +87,18 @@ export default function MentorInbox() {
                     onPress={() => respondToRequest(req._id, 'accepted')}
                     style={[styles.button, styles.accept]}
                   >
-                    <Text style={styles.buttonText}>Accept ✅</Text>
+                    <Text style={styles.buttonText}>Accept </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => respondToRequest(req._id, 'rejected')}
                     style={[styles.button, styles.reject]}
                   >
-                    <Text style={styles.buttonText}>Reject ❌</Text>
+                    <Text style={styles.buttonText}>Reject </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <Text style={styles.status}>
-                  Status: {req.status === 'accepted' ? '✅ Accepted' : '❌ Rejected'}
+                  Status: {req.status === 'accepted' ? ' Accepted' : ' Rejected'}
                 </Text>
               )}
             </View>
