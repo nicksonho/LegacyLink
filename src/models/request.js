@@ -1,12 +1,10 @@
 import mongoose from 'mongoose';
 
-const RequestSchema = new mongoose.Schema({
-  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  mentorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Mentor' },
+const requestSchema = new mongoose.Schema({
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },     // student
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },   // mentor
   status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
   message: String,
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: Date
-});
+}, { timestamps: true });
 
-export default mongoose.model("Request", RequestSchema);
+export default mongoose.models.Request || mongoose.model('Request', requestSchema);
