@@ -32,9 +32,8 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   const [profile, setProfile] = useState(initialProfile);
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
 
-  // update any field by key
   const handleChange = (key) => (val) => {
     setProfile((p) => ({ ...p, [key]: val }));
   };
@@ -43,7 +42,6 @@ export default function OnboardingPage() {
     try {
       const token = await getToken();
       console.log("📤 Sending profile:", profile);
-      console.log("🔐 Clerk token preview:", token?.slice(0, 10) + "...");
 
       const res = await fetch(`${API_URL}/api/auth/signup`, {
         method: "POST",
@@ -53,7 +51,7 @@ export default function OnboardingPage() {
         },
         body: JSON.stringify({
           ...profile,
-          yearOfStudy: Number(profile.yearOfStudy),
+          yearOfStudy: profile.role === 'student' ? Number(profile.yearOfStudy) : undefined,
           interests: profile.interests.split(",").map((s) => s.trim()),
         }),
       });
@@ -73,22 +71,12 @@ export default function OnboardingPage() {
 
       const data = await res.json();
       console.log("✅ Backend responded with:", data);
-      router.replace("/home"); // Redirect to custom home page after onboarding
-
+      router.replace("/home");
     } catch (e) {
       console.error("Onboarding error:", e);
       setError(e.message);
     }
   };
-
-  const fields = [
-    { key: "name",          label: "Full Name",                 placeholder: "e.g. Jane Doe",           keyboardType: "default" },
-    { key: "yearOfStudy",   label: "Year of Study",             placeholder: "e.g. 3",                  keyboardType: "numeric" },
-    { key: "course",        label: "Course",                    placeholder: "e.g. Information Systems",keyboardType: "default" },
-    { key: "interests",     label: "Interests (comma-separated)",placeholder: "tech, fashion, music",   keyboardType: "default", multiline: true },
-    { key: "bio",           label: "Short Bio",                 placeholder: "Tell us about yourself",  keyboardType: "default", multiline: true },
-    { key: "profilePicUrl", label: "Profile Pic URL",           placeholder: "https://...",             keyboardType: "default" },
-  ];
 
   return (
     <KeyboardAvoidingView
@@ -98,23 +86,9 @@ export default function OnboardingPage() {
       <ScrollView contentContainerStyle={styles.formContainer}>
         <Text style={styles.title}>Tell us about yourself</Text>
 
-        {fields.map(({ key, label, placeholder, keyboardType, multiline }) => (
-          <View key={key} style={{ marginBottom: 12, width: "100%" }}>
-            <Text style={styles.label}>{label}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={placeholder}
-              keyboardType={keyboardType}
-              multiline={!!multiline}
-              numberOfLines={multiline ? 3 : 1}
-              value={profile[key]}
-              onChangeText={handleChange(key)}
-            />
-          </View>
-        ))}
-
+        {/* Role Picker */}
         <Text style={styles.label}>Role</Text>
-        <View style={{ ...styles.input, padding: 0, borderColor: COLORS.border }}>
+        <View style={{ ...styles.input, padding: 0, borderColor: COLORS.border, marginBottom: 12 }}>
           <Picker
             selectedValue={profile.role}
             onValueChange={handleChange("role")}
@@ -122,6 +96,86 @@ export default function OnboardingPage() {
             <Picker.Item label="Student" value="student" />
             <Picker.Item label="Mentor" value="mentor" />
           </Picker>
+        </View>
+
+        {/* Shared Fields */}
+        <View style={{ marginBottom: 12, width: "100%" }}>
+          <Text style={styles.label}>Full Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Jane Doe"
+            value={profile.name}
+            onChangeText={handleChange("name")}
+          />
+        </View>
+
+        {profile.role === "student" && (
+          <>
+            <View style={{ marginBottom: 12, width: "100%" }}>
+              <Text style={styles.label}>Year of Study</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 2"
+                keyboardType="numeric"
+                value={profile.yearOfStudy}
+                onChangeText={handleChange("yearOfStudy")}
+              />
+            </View>
+
+            <View style={{ marginBottom: 12, width: "100%" }}>
+              <Text style={styles.label}>Course</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Information Systems"
+                value={profile.course}
+                onChangeText={handleChange("course")}
+              />
+            </View>
+          </>
+        )}
+
+        {profile.role === "mentor" && (
+          <View style={{ marginBottom: 12, width: "100%" }}>
+            <Text style={styles.label}>Area of Expertise</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Data Science, Entrepreneurship"
+              value={profile.course}
+              onChangeText={handleChange("course")}
+            />
+          </View>
+        )}
+
+        <View style={{ marginBottom: 12, width: "100%" }}>
+          <Text style={styles.label}>Interests (comma-separated)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. tech, music, design"
+            value={profile.interests}
+            onChangeText={handleChange("interests")}
+          />
+        </View>
+
+        <View style={{ marginBottom: 12, width: "100%" }}>
+          <Text style={styles.label}>Short Bio</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Tell us about yourself"
+            multiline
+            numberOfLines={3}
+            value={profile.bio}
+            onChangeText={handleChange("bio")}
+          />
+        </View>
+
+        <View style={{ marginBottom: 20, width: "100%" }}>
+          <Text style={styles.label}>Profile Pic URL</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="https://..."
+            value={profile.profilePicUrl}
+            onChangeText={handleChange("profilePicUrl")}
+          />
         </View>
 
         {!!error && <Text style={styles.errorText}>{error}</Text>}
