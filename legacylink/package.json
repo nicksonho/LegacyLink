@@ -47,7 +47,8 @@
     "react-native-toast-message": "^2.3.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "zxcvbn": "^4.4.2"
+    "zxcvbn": "^4.4.2",
+    "expo-updates": "~0.28.15"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

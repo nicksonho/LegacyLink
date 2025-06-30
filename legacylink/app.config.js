@@ -43,5 +43,14 @@ export default ({ config }) => ({
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
     clerkPublishableKey: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    eas: {
+      projectId: "239c5307-79d2-444e-bef7-d0f003d73754"
+    }
+  },
+  updates: {
+    url: "https://u.expo.dev/239c5307-79d2-444e-bef7-d0f003d73754"
+  },
+  runtimeVersion: {
+    policy: "appVersion"
   }
 });
