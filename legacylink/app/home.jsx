@@ -1,3 +1,4 @@
+// ✅ app/home.jsx (updated with async signOut fix)
 import React from 'react';
 import {
   SafeAreaView,
@@ -9,7 +10,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Ionicons, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -23,19 +24,23 @@ export default function HomePage() {
 
   const displayName = user?.firstName || 'there';
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // Optionally navigate to onboarding or root
+      router.replace('/');
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
+  };
+
   return (
     <LinearGradient colors={['#ffe9d2', '#fff']} style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
-        {/* 👋 Animated Greeting */}
-        <Animatable.Text
-          animation="fadeInDown"
-          duration={1000}
-          style={styles.greeting}
-        >
+        <Animatable.Text animation="fadeInDown" duration={1000} style={styles.greeting}>
           Hi {displayName} <Text style={styles.wave}>👋</Text>
         </Animatable.Text>
 
-        {/* 🧭 Branding */}
         <View style={styles.logoContainer}>
           <Ionicons name="people-circle" size={52} color="#8B5E3C" />
           <Text style={styles.appTitle}>LegacyLink</Text>
@@ -44,25 +49,24 @@ export default function HomePage() {
           </Text>
         </View>
 
-        {/* 🔲 Cards Grid */}
         <View style={styles.gridContainer}>
           <View style={styles.cardRow}>
             <TouchableOpacity
               style={styles.card}
-              onPress={() => router.push('/mentors')}
+              onPress={() => router.push('/swipe-mentors')}
               activeOpacity={0.8}
             >
-              <FontAwesome5 name="user-friends" size={28} color="#8B5E3C" />
-              <Text style={styles.cardText}>Mentors</Text>
+              <Ionicons name="people-outline" size={28} color="#8B5E3C" />
+              <Text style={styles.cardText}>Find Mentors</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.card}
-              onPress={() => router.push('/messages')}
+              onPress={() => router.push('/mentor-inbox')}
               activeOpacity={0.8}
             >
-              <MaterialIcons name="message" size={28} color="#8B5E3C" />
-              <Text style={styles.cardText}>Messages</Text>
+              <Ionicons name="mail-unread-outline" size={28} color="#8B5E3C" />
+              <Text style={styles.cardText}>Inbox</Text>
             </TouchableOpacity>
           </View>
 
@@ -78,7 +82,7 @@ export default function HomePage() {
 
             <TouchableOpacity
               style={[styles.card, styles.signOutCard]}
-              onPress={signOut}
+              onPress={handleSignOut}
               activeOpacity={0.8}
             >
               <Ionicons name="log-out-outline" size={28} color="#8B5E3C" />
@@ -87,7 +91,6 @@ export default function HomePage() {
           </View>
         </View>
 
-        {/* 🌟 Footer Quote */}
         <View style={styles.footer}>
           <Text style={styles.footerQuote}>
             ✨ You’re one connection away from a breakthrough.

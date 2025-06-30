@@ -2,10 +2,12 @@
   "type": "module",
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
+    "@huggingface/inference": "^4.0.6",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
-    "mongoose": "^8.15.1"
+    "mongoose": "^8.15.1",
+    "react-native-deck-swiper": "^2.0.18"
   }
 }
