@@ -1,6 +1,7 @@
+// app/profile.jsx
 import Constants from 'expo-constants';
 import { useAuth } from "@clerk/clerk-expo";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,23 +9,17 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Animated,
-  StyleSheet,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
-import * as Animatable from "react-native-animatable";
-import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
-const TOTAL_FIELDS = 5;
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function Profile() {
   const { getToken } = useAuth();
@@ -33,7 +28,6 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -54,49 +48,10 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  useEffect(() => {
-    if (!userData) return;
-    const filledCount = [
-      userData.name,
-      userData.bio,
-      userData.course,
-      userData.yearOfStudy,
-      userData.interests?.length ? userData.interests : null,
-    ].filter(Boolean).length;
-    const targetWidth = (filledCount / TOTAL_FIELDS) * SCREEN_WIDTH;
-    Animated.timing(progressAnim, {
-      toValue: targetWidth,
-      duration: 800,
-      useNativeDriver: false,
-    }).start();
-  }, [userData]);
-
-  if (loading) {
-    return (
-      <View style={styles.skeletonContainer}>
-        {[...Array(TOTAL_FIELDS + 1)].map((_, i) => (
-          <Animatable.View
-            key={i}
-            animation="pulse"
-            iterationCount="infinite"
-            delay={i * 100}
-            style={styles.skeletonBubble}
-          />
-        ))}
-      </View>
-    );
-  }
-  if (error) return <Text style={styles.error}>{error}</Text>;
-
-  const handlePress = async (action) => {
-    await Haptics.selectionAsync();
-    action();
-  };
-
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType.IMAGE,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
@@ -114,8 +69,7 @@ export default function Profile() {
       const token = await getToken();
       const payload = {
         ...userData,
-        yearOfStudy:
-          userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
+        yearOfStudy: userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
       };
       const res = await fetch(`${API_URL}/api/users/me`, {
         method: "PATCH",
@@ -129,7 +83,7 @@ export default function Profile() {
       setIsEditing(false);
       Toast.show({
         type: "success",
-        text1: "✅ Profile updated",
+        text1: "Profile updated",
         text2: "Your changes were saved successfully.",
       });
     } catch (err) {
@@ -137,59 +91,54 @@ export default function Profile() {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading your profile...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1 }}
     >
       <LinearGradient colors={["#fffaf5", "#fbe0c3"]} style={styles.container}>
-        {/* 🔙 Back Button */}
+        {/* Back Button */}
         <TouchableOpacity
-          onPress={() => router.push('/home')}
+          onPress={() => router.back()}
           style={styles.backButton}
           activeOpacity={0.8}
         >
           <Ionicons name="arrow-back" size={24} color="#744d32" />
         </TouchableOpacity>
 
-        {/* Progress bar */}
-        <View style={styles.progressBarBackground}>
-          <Animated.View
-            style={[styles.progressBarFill, { width: progressAnim }]}
-          />
-        </View>
-
-        {/* Main content */}
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          <Animatable.Text animation="fadeInDown" delay={200} style={styles.header}>
-            Welcome to <Text style={{ color: "#744d32" }}>LegacyLink</Text> ✨
-          </Animatable.Text>
+          <Text style={styles.header}>Your Profile</Text>
 
-          <Animatable.View
-            ref={(ref) => (styles.cardRef = ref)}
-            animation="fadeInUp"
-            delay={400}
-            style={styles.card}
-          >
+          <View style={styles.card}>
             <TouchableOpacity
-              onPress={() => handlePress(pickImage)}
-              style={styles.avatarContainer}
+              onPress={pickImage}
               activeOpacity={0.8}
+              style={styles.avatarContainer}
             >
-              <LinearGradient
-                colors={["#d6a17d", "#744d32"]}
-                style={styles.avatarBorder}
-              >
-                <Image
-                  source={{ uri: userData.profilePicUrl || "https://via.placeholder.com/150" }}
-                  style={styles.avatar}
-                />
-              </LinearGradient>
-              <Text style={styles.tapToChange}>📸 Tap to change</Text>
+              <Image
+                source={{ uri: userData.profilePicUrl || "https://via.placeholder.com/150" }}
+                style={styles.avatar}
+              />
+              <Text style={styles.tapToChange}>Tap to change</Text>
             </TouchableOpacity>
 
             {renderField("Name", "name", userData, setUserData, isEditing)}
@@ -198,61 +147,62 @@ export default function Profile() {
             {renderField("Year of Study", "yearOfStudy", userData, setUserData, isEditing, true)}
             {renderField("Interests", "interests", userData, setUserData, isEditing, false, true)}
 
-            <Animatable.View
-              animation={isEditing ? "pulse" : "bounce"}
-              iterationCount={isEditing ? 1 : 2}
-              style={{ marginTop: 20 }}
+            <TouchableOpacity
+              onPress={isEditing ? handleUpdate : () => setIsEditing(true)}
+              style={styles.button}
+              activeOpacity={0.8}
             >
-              <TouchableOpacity
-                onPress={() =>
-                  handlePress(isEditing ? handleUpdate : () => setIsEditing(true))
-                }
-                style={styles.button}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.buttonText}>
-                  {isEditing ? '💾 Save Changes' : '✏️ Edit Profile'}
-                </Text>
-              </TouchableOpacity>
-            </Animatable.View>
-          </Animatable.View>
+              <Text style={styles.buttonText}>
+                {isEditing ? "Save Changes" : "Edit Profile"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </LinearGradient>
     </KeyboardAvoidingView>
   );
 }
 
-function renderField(
-  label,
-  key,
-  userData,
-  setUserData,
-  isEditing,
-  isNumeric = false,
-  isArray = false
-) {
+function renderField(label, key, userData, setUserData, isEditing, isNumeric = false, isArray = false) {
   return (
-    <Animatable.View animation="fadeInUp" delay={600} style={styles.bubble}>
-      <Text style={styles.bubbleLabel}>{label}</Text>
+    <View style={styles.fieldContainer}>
+      <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
-        value={
-          isArray
-            ? userData[key]?.join(', ') || ''
-            : userData[key] === undefined || userData[key] === null
-            ? ''
-            : String(userData[key])
-        }
-        editable={isEditing}
-        onChangeText={(text) => {
-          const updatedValue =
-            isArray ? text.split(',').map((i) => i.trim()) : text;
-          setUserData({ ...userData, [key]: updatedValue });
-        }}
         style={styles.input}
+        editable={isEditing}
         placeholder={label}
         placeholderTextColor="#aaa"
-        keyboardType={isNumeric ? 'numeric' : 'default'}
+        value={
+          isArray
+            ? userData[key]?.join(", ") || ""
+            : userData[key] === undefined || userData[key] === null
+            ? ""
+            : String(userData[key])
+        }
+        onChangeText={(text) => {
+          const updatedValue = isArray ? text.split(",").map((s) => s.trim()) : text;
+          setUserData({ ...userData, [key]: updatedValue });
+        }}
+        keyboardType={isNumeric ? "numeric" : "default"}
       />
-    </Animatable.View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContainer: { paddingTop: 60, paddingHorizontal: 20, alignItems: "center" },
+  header: { fontSize: 26, fontWeight: "700", color: "#744d32", marginBottom: 20 },
+  card: { backgroundColor: "#ffffffee", borderRadius: 24, padding: 20, width: "100%", alignItems: "center", gap: 16 },
+  avatarContainer: { alignItems: "center", marginBottom: 12 },
+  avatar: { width: 140, height: 140, borderRadius: 70, borderWidth: 3, borderColor: "#744d32" },
+  tapToChange: { color: "#744d32", fontSize: 14, marginTop: 6 },
+  fieldContainer: { width: "100%" },
+  fieldLabel: { fontSize: 14, fontWeight: "600", color: "#744d32", marginBottom: 6 },
+  input: { backgroundColor: "#f4f4f4", padding: 12, borderRadius: 12, fontSize: 16, color: "#333" },
+  button: { backgroundColor: "#744d32", padding: 16, borderRadius: 16, width: "100%", alignItems: "center", marginTop: 12 },
+  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fffaf5" },
+  loadingText: { fontSize: 16, color: "#744d32" },
+  backButton: { position: "absolute", top: 40, left: 20, zIndex: 10, backgroundColor: "#fff", padding: 8, borderRadius: 20, shadowColor: "#000", shadowOpacity: 0.1, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 3 },
+});
