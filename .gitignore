@@ -1,4 +1,4 @@
 # ignore all node_modules anywhere in the tree
 node_modules/
 **/node_modules/
-.env15
+.env
