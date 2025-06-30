@@ -1,100 +1,93 @@
 # LegacyLink
 
-LegacyLink is a mentorship matching platform designed to connect NUS students with alumni in the startup ecosystem. Our mission is to foster meaningful connections, career insights, and opportunities for collaboration between students and experienced alumni.
+LegacyLink is a mentorship matching platform designed to connect NUS students with alumni in the startup ecosystem. We aim to foster meaningful connections, career insights, and opportunities for collaboration between students and experienced alumni through a mobile-first, intuitive platform.
+For Detailed README (google docs with images) : https://docs.google.com/document/d/1bDvqHsqvOm-vwLtHGWDkfbI0dcSnkDfRGNu9l8l2gFA/edit?tab=t.0
 
 ---
 
 ## Level of Achievement
 
-Artemis (Target)  
-We aim to complete core features with a seamless user experience by the end of Milestone 3, including real-time chat, mentor matching, and protected API integration.
+**Target:** Artemis  
+By Milestone 3, we aim to complete all core features, including real-time chat, mentor matching, and secure API integrations with a seamless user experience.
 
 ---
 
 ## Project Scope
 
-### One-sentence version:
-A mentorship app connecting NUS students with startup-experienced alumni through curated profiles and chat functionality.
+### One-sentence description
+A mentorship app connecting NUS students with startup-experienced alumni through curated profiles and real-time chat.
 
-### Descriptive version:
-LegacyLink addresses the challenge of discovering relevant alumni mentors by providing a dedicated mobile-first platform. Students can register, browse curated mentor profiles, and initiate real-time chats with mentors whose startup experience aligns with their interests. The platform is designed to be intuitive, fast, and scalable using modern tech stacks and secure authentication.
+### Detailed description
+LegacyLink addresses the challenge of discovering relevant alumni mentors by providing a dedicated mobile-first platform. Students can register, browse curated mentor profiles, and initiate chats with mentors whose startup experience aligns with their interests. The platform prioritizes speed, scalability, and security using a modern tech stack.
 
 ---
 
-## Milestone 1 (Ideation)
+## Milestone 1 (Completed)
 
 ### Problem Motivation
-Students often struggle to connect with alumni in niche or emerging sectors like startups. Traditional alumni directories are static and not optimized for fast, real-time conversations. There is a need for a dedicated, modern platform where startup-minded students can find mentors and communicate with them directly.
+Students often struggle to connect with alumni in emerging sectors like startups. Traditional alumni directories are static and not optimized for direct conversations. LegacyLink creates a dedicated platform for startup-minded students to find and communicate with mentors effectively.
 
-### Proposed Core Features
-- Clerk authentication system
-- Student and mentor registration and profile viewing
-- RESTful API with CRUD operations
-- Messaging system for student-mentor interaction
-- Mobile-first frontend using React Native
-
-### Design & Plan
-- Frontend: React Native using Expo
-- Backend: Node.js with Express
-- Database: MongoDB (via Mongoose)
-- Authentication: Clerk (frontend complete, backend in progress)
-- Hosting (Planned): Vercel (frontend), Render or Railway (backend)
-- Project Repository: [GitHub - LegacyLink](https://github.com/nicksonho/LegacyLink)
-
----
-
-## Core Features Implemented (Milestone 1)
-**We focused more on the backend portion and all of our API enpoints coming to this milestone. One all these endpoints are in place , we will shift our focus to the front end. **
-- Backend API endpoints for:
-  - POST /api/auth/register
-  - POST /api/auth/login
-  - GET /api/users, POST, PUT, DELETE
-  - GET /api/mentors, POST, PUT, DELETE
-**- More Backend API endpoints for notifications , messages and request. (Please see under src/controllers for logic, src/routes for routes, src/models for all the schemas we have created,) **
-
+### Features Implemented
+- Clerk authentication system (frontend complete, backend in progress)
+- RESTful API with CRUD operations:
+  - User registration, login, and management
+  - Mentor CRUD endpoints
+  - Notifications, messages, and request endpoints
 - MongoDB integration for persistent data storage
-- Seed script for user data
-- Project is modularized into /routes, /controllers, /models
-- Expo frontend with working sign-in and sign-up UI using Clerk
-- Basic navigation setup (React Navigation)
+- Project modularization (`/routes`, `/controllers`, `/models`)
+- Expo frontend with working sign-in/sign-up UI using Clerk
+- Basic navigation setup using React Navigation
 
 ---
 
-## Known Challenges
-
-- Misalignment between frontend and backend on Clerk token handling (currently resolving), require more time to solve this issue
-- Delay in setting up Socket.io for real-time messaging due to token-based auth
-- Need for more frontend-backend communication testing in Postman and Expo
-
+## Challenges Encountered
+- Aligning frontend and backend for Clerk JWT handling
+- Delays in implementing Socket.io due to token-based authentication
+- Ongoing refinement of frontend-backend integration and Postman testing
 
 ---
 
 ## Milestone 2 Preview
 
-- Implement full chat system with Socket.io
-- Secure backend APIs with Clerk token verification
-- Create Mentor Directory with filters
-- Display logged-in user profiles
-- Add request-matching functionality based on interests
-- Main Bulk of feauture done
-- E2E testing and prep for deployment
-
-
+- Full chat system with Socket.io (pending Debugging)
+- Clerk-secured backend APIs
+- Mentor directory with filters
+- User profile display
+- Interest-based request matching
+- Core features completed and tested
+- End-to-end testing and deployment preparation
 
 ---
 
-## Additional Notes
+## Tech Stack
 
-- Project Log under the link https://docs.google.com/document/d/1w3JyvZ519LBYqc6Tig7Nn5eUTiExlMnynMNyqhqUU_k/edit?tab=t.0
+- **Frontend:** React Native (Expo)
+- **Backend:** Node.js with Express
+- **Database:** MongoDB (Mongoose)
+- **Authentication:** Clerk
+- **Planned Hosting:** Vercel (frontend), Render or Railway (backend)
+
+---
+
+## Documentation
+
+For detailed project logs, updates, and testing notes:  
+[📄 Project Log (Google Docs)](https://docs.google.com/document/d/1w3JyvZ519LBYqc6Tig7Nn5eUTiExlMnynMNyqhqUU_k/edit?tab=t.0)
 
 ---
 
 ## Team
 
-| Name          | Role            | Responsibilities |
-|---------------|------------------|-------------------|
-| Declan        | Backend Lead     | API endpoints, MongoDB models, Express setup |
-| Nickson       | Frontend Lead    | Expo setup, Clerk integration, screen layout |
-| Both          | Full-Stack Support | Integration, planning, documentation |
+| Name    | Role          | Responsibilities                            |
+|---------|---------------|---------------------------------------------|
+| Declan  | Backend Lead  | API development, MongoDB models, Express   |
+| Nickson | Frontend Lead | Expo setup, Clerk integration, UI/UX       |
+| Both    | Full-Stack    | Integration, testing, planning, documentation |
+
+---
+
+## Repository
+
+[GitHub - LegacyLink](https://github.com/nicksonho/LegacyLink)
 
 ---
