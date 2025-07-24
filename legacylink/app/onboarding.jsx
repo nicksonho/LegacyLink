@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { Picker } from "@react-native-picker/picker";
-import { styles } from "@/assets/styles/auth.styles";
-import { COLORS } from "@/constants/colors";
+import { styles } from "../assets/styles/auth.styles";
+import { COLORS } from "../constants/colors";
 import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
