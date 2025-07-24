@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+      - name: Install backend dependencies
+        run: npm install
+      # Uncomment and add your backend test script if you have one
+      # - name: Run backend tests
+      #   run: npm test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./legacylink
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+      - name: Install frontend dependencies
+        run: npm install
+      - name: Run frontend tests
+        run: npm test
+      - name: Run linter
+        run: npm run lint 
+
+        #The current CI setup, install all dependencies (backend and frontend), run tests, and run linter for the frontend.
