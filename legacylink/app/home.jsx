@@ -80,15 +80,23 @@ export default function HomePage() {
               <Text style={styles.cardText}>Profile</Text>
             </TouchableOpacity>
 
+            {/* Chat button replaces sign out */}
             <TouchableOpacity
-              style={[styles.card, styles.signOutCard]}
-              onPress={handleSignOut}
+              style={styles.card}
+              onPress={() => router.push('/chat-list')}
               activeOpacity={0.8}
             >
-              <Ionicons name="log-out-outline" size={28} color="#8B5E3C" />
-              <Text style={[styles.cardText, styles.signOutText]}>Sign Out</Text>
+              <Ionicons name="chatbubble-ellipses-outline" size={28} color="#8B5E3C" />
+              <Text style={styles.cardText}>Chat</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Sign Out icon in top right */}
+        <View style={styles.topRightSignOut}>
+          <TouchableOpacity onPress={handleSignOut} style={styles.signOutIconButton}>
+            <Ionicons name="log-out-outline" size={22} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
@@ -179,5 +187,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8B5E3C',
     fontStyle: 'italic',
+  },
+  topRightSignOut: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 20,
+  },
+  signOutIconButton: {
+    backgroundColor: '#8B5E3C',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
