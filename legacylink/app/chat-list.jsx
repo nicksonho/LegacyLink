@@ -1,34 +1,50 @@
-import React from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import SafeScreen from "../components/SafeScreen";
 import { COLORS } from "../constants/colors";
 import { useRouter } from "expo-router";
-
-// Placeholder conversations
-const conversations = [
-  {
-    _id: "1",
-    partner: {
-      name: "Mentor Jane",
-      profilePicUrl: "https://via.placeholder.com/40x40.png?text=J",
-    },
-    lastMessage: "Looking forward to our session!",
-    lastMessageTime: "2h ago",
-  },
-  {
-    _id: "2",
-    partner: {
-      name: "Mentor John",
-      profilePicUrl: "https://via.placeholder.com/40x40.png?text=J",
-    },
-    lastMessage: "See you next week!",
-    lastMessageTime: "1d ago",
-  },
-];
+import { useAuth } from "@clerk/clerk-expo";
+import { fetchConversations, formatMessageTime } from "../lib/chatUtils";
 
 export default function ChatListPage() {
   const router = useRouter();
+  const { getToken } = useAuth();
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadConversations();
+  }, );
+
+  const loadConversations = async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Auth Error', 'User token missing.');
+        return;
+      }
+      
+      const data = await fetchConversations(token);
+      setConversations(data);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      Alert.alert('Error', 'Failed to load conversations.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeScreen>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading chats...</Text>
+        </View>
+      </SafeScreen>
+    );
+  }
 
   return (
     <SafeScreen>
@@ -47,21 +63,65 @@ export default function ChatListPage() {
             onPress={() => router.push(`/chat/${item._id}`)}
             activeOpacity={0.8}
           >
-            <Image source={{ uri: item.partner.profilePicUrl }} style={styles.avatar} />
+            <Image 
+              source={{ 
+                uri: item.partner?.profilePicUrl || "https://via.placeholder.com/40x40.png?text=" + (item.partner?.name?.charAt(0) || "?")
+              }} 
+              style={styles.avatar} 
+            />
             <View style={styles.tileTextContainer}>
-              <Text style={styles.partnerName}>{item.partner.name}</Text>
+              <Text style={styles.partnerName}>{item.partner?.name || "Unknown"}</Text>
               <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
             </View>
-            <Text style={styles.time}>{item.lastMessageTime}</Text>
+            <Text style={styles.time}>{formatMessageTime(item.lastMessageTime)}</Text>
             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={<Text style={styles.empty}>No chats yet.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            No chats yet. Connect with mentors to start conversations!
+          </Text>
+        }
+        refreshing={loading}
+        onRefresh={loadConversations}
       />
     </SafeScreen>
   );
 }
+
+//   return (
+//     <SafeScreen>
+//       <View style={styles.header}>
+//         <TouchableOpacity onPress={() => router.replace('/home')} style={styles.backButton}>
+//           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+//         </TouchableOpacity>
+//         <Text style={styles.headerTitle}>Chats</Text>
+//       </View>
+//       <FlatList
+//         data={conversations}
+//         keyExtractor={item => item._id}
+//         renderItem={({ item }) => (
+//           <TouchableOpacity
+//             style={styles.tile}
+//             onPress={() => router.push(`/chat/${item._id}`)}
+//             activeOpacity={0.8}
+//           >
+//             <Image source={{ uri: item.partner.profilePicUrl }} style={styles.avatar} />
+//             <View style={styles.tileTextContainer}>
+//               <Text style={styles.partnerName}>{item.partner.name}</Text>
+//               <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
+//             </View>
+//             <Text style={styles.time}>{item.lastMessageTime}</Text>
+//             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} style={{ marginLeft: 8 }} />
+//           </TouchableOpacity>
+//         )}
+//         contentContainerStyle={styles.listContainer}
+//         ListEmptyComponent={<Text style={styles.empty}>No chats yet.</Text>}
+//       />
+//     </SafeScreen>
+//   );
+// }
 
 const styles = StyleSheet.create({
   header: {

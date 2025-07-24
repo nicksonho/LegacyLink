@@ -36,8 +36,8 @@
     "expo-updates": "~0.28.15",
     "expo-web-browser": "~14.1.6",
     "lottie-react-native": "^7.2.2",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-native": "0.79.2",
     "react-native-animatable": "^1.4.0",
     "react-native-gesture-handler": "~2.24.0",
@@ -49,6 +49,7 @@
     "react-native-toast-message": "^2.3.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
+    "socket.io-client": "^4.8.1",
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
@@ -62,7 +63,7 @@
     "eslint-config-expo": "~9.2.0",
     "expo-router": "^5.0.7",
     "jest": "^30.0.4",
-    "react-test-renderer": "^19.1.0",
+    "react-test-renderer": "19.0.0",
     "typescript": "~5.8.3"
   },
   "private": true

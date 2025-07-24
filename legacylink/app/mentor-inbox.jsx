@@ -12,11 +12,12 @@ import Constants from 'expo-constants';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { generateChatId } from '../lib/chatUtils';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
 export default function MentorInbox() {
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,7 @@ export default function MentorInbox() {
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+  },);
 
   const respondToRequest = async (id, action) => {
     try {
@@ -55,9 +56,14 @@ export default function MentorInbox() {
       });
       if (!res.ok) throw new Error('Request failed');
       fetchRequests(); // Refresh list
-    } catch (err) {
+    } catch (_err) {
       Alert.alert('Error', 'Could not update request.');
     }
+  };
+
+  const startChat = (senderId) => {
+    const chatId = generateChatId(userId, senderId);
+    router.push(`/chat/${chatId}`);
   };
 
   return (
@@ -96,9 +102,19 @@ export default function MentorInbox() {
                     <Text style={styles.buttonText}>Reject </Text>
                   </TouchableOpacity>
                 </View>
+              ) : req.status === 'accepted' ? (
+                <View style={styles.actions}>
+                  <Text style={styles.status}>Status: Accepted</Text>
+                  <TouchableOpacity
+                    onPress={() => startChat(req.sender._id)}
+                    style={[styles.button, styles.chat]}
+                  >
+                    <Text style={styles.buttonText}>Start Chat</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <Text style={styles.status}>
-                  Status: {req.status === 'accepted' ? ' Accepted' : ' Rejected'}
+                  Status: Rejected
                 </Text>
               )}
             </View>
@@ -174,6 +190,9 @@ const styles = StyleSheet.create({
   },
   reject: {
     backgroundColor: '#ffd6d6',
+  },
+  chat: {
+    backgroundColor: '#d0e8ff',
   },
   buttonText: {
     fontWeight: '600',

@@ -1,44 +1,143 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import SafeScreen from "../../components/SafeScreen";
 import { COLORS } from "../../constants/colors";
-
-// Placeholder conversation data
-const conversationData = {
-  "1": {
-    partner: { name: "Mentor Jane" },
-    messages: [
-      { _id: 1, text: "Hello!", sender: "them" },
-      { _id: 2, text: "Hi Jane!", sender: "me" },
-      { _id: 3, text: "Looking forward to our session!", sender: "them" },
-    ],
-  },
-  "2": {
-    partner: { name: "Mentor John" },
-    messages: [
-      { _id: 1, text: "Hey John!", sender: "me" },
-      { _id: 2, text: "See you next week!", sender: "them" },
-    ],
-  },
-};
+import { useAuth } from "@clerk/clerk-expo";
+import { useSocket } from "../../contexts/SocketContext";
+import { fetchMessages, sendMessage as sendMessageAPI } from "../../lib/chatUtils";
 
 export default function ChatDetailPage() {
   const router = useRouter();
   const { conversationId } = useLocalSearchParams();
-  const convo = conversationData[conversationId] || { partner: { name: "Unknown" }, messages: [] };
-  const [messages, setMessages] = useState(convo.messages);
+  const { getToken, userId } = useAuth();
+  const { socket, joinChat, leaveChat } = useSocket();
+  
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [partner, setPartner] = useState({ name: "Loading..." });
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    setMessages([
-      ...messages,
-      { _id: Date.now(), text: input, sender: "me" }
-    ]);
-    setInput("");
+  const handleNewMessage = useCallback((messageData) => {
+    setMessages(prevMessages => [...prevMessages, messageData]);
+  }, []);
+
+  const loadMessages = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Auth Error', 'User token missing.');
+        return;
+      }
+      
+      const data = await fetchMessages(conversationId, token);
+      setMessages(data);
+      
+      // Set partner info from the first message
+      if (data.length > 0) {
+        const firstMessage = data[0];
+        const partnerData = firstMessage.senderId._id === userId ? firstMessage.receiverId : firstMessage.senderId;
+        setPartner(partnerData);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      Alert.alert('Error', 'Failed to load messages.');
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId, getToken, userId]);
+
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
+  useEffect(() => {
+    // Join chat room for real-time updates
+    if (conversationId) {
+      joinChat(conversationId);
+    }
+
+    // Listen for new messages
+    if (socket) {
+      socket.on('receive_message', handleNewMessage);
+    }
+
+    return () => {
+      if (conversationId) {
+        leaveChat(conversationId);
+      }
+      if (socket) {
+        socket.off('receive_message', handleNewMessage);
+      }
+    };
+  }, [conversationId, socket, joinChat, leaveChat, handleNewMessage]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || sending) return;
+    
+    setSending(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Auth Error', 'User token missing.');
+        return;
+      }
+
+      // Extract receiver ID from chat ID or determine from messages
+      let receiverId = null;
+      if (messages.length > 0) {
+        const firstMessage = messages[0];
+        receiverId = firstMessage.senderId._id === userId ? firstMessage.receiverId._id : firstMessage.senderId._id;
+      }
+
+      const messageData = {
+        chatId: conversationId,
+        text: input.trim(),
+        receiverId,
+      };
+
+      const newMessage = await sendMessageAPI(messageData, token);
+      
+      // Add message to local state
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      setInput("");
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message.');
+    } finally {
+      setSending(false);
+    }
   };
+
+  const renderMessage = ({ item }) => {
+    const isMe = item.senderId._id === userId;
+    return (
+      <View style={[styles.messageRow, isMe ? styles.rowReverse : null]}>
+        <View style={[styles.messageBubble, isMe ? styles.sent : styles.received]}>
+          <Text style={[styles.messageText, isMe ? styles.sentText : styles.receivedText]}>
+            {item.text}
+          </Text>
+          <Text style={[styles.timestamp, isMe ? styles.sentTimestamp : styles.receivedTimestamp]}>
+            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeScreen>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading messages...</Text>
+        </View>
+      </SafeScreen>
+    );
+  }
 
   return (
     <SafeScreen>
@@ -46,24 +145,18 @@ export default function ChatDetailPage() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{convo.partner.name}</Text>
+        <Text style={styles.headerTitle}>{partner.name}</Text>
       </View>
+      
       <FlatList
         data={[...messages].reverse()}
-        keyExtractor={item => item._id.toString()}
-        renderItem={({ item }) => {
-          const isMe = item.sender === "me";
-          return (
-            <View style={[styles.messageRow, isMe ? styles.rowReverse : null]}>
-              <View style={[styles.messageBubble, isMe ? styles.sent : styles.received]}>
-                <Text style={[styles.messageText, isMe ? styles.sentText : styles.receivedText]}>{item.text}</Text>
-              </View>
-            </View>
-          );
-        }}
+        keyExtractor={item => item._id}
+        renderItem={renderMessage}
         contentContainerStyle={styles.messagesContainer}
         inverted
+        showsVerticalScrollIndicator={false}
       />
+      
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.inputBar}>
           <TextInput
@@ -72,16 +165,25 @@ export default function ChatDetailPage() {
             onChangeText={setInput}
             placeholder="Type a message..."
             placeholderTextColor={COLORS.textLight}
+            multiline
+            maxLength={500}
           />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Ionicons name="send" size={22} color="#fff" />
+          <TouchableOpacity 
+            onPress={sendMessage} 
+            style={[styles.sendButton, { opacity: (input.trim() && !sending) ? 1 : 0.5 }]}
+            disabled={!input.trim() || sending}
+          >
+            {sending ? (
+              <ActivityIndicator size={20} color="#fff" />
+            ) : (
+              <Ionicons name="send" size={22} color="#fff" />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeScreen>
   );
 }
-
 const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
@@ -99,6 +201,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: COLORS.text,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLORS.textLight,
   },
   messagesContainer: {
     flexGrow: 1,
@@ -144,9 +256,20 @@ const styles = StyleSheet.create({
   receivedText: {
     color: COLORS.text,
   },
+  timestamp: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  sentTimestamp: {
+    color: "rgba(255,255,255,0.7)",
+    textAlign: 'right',
+  },
+  receivedTimestamp: {
+    color: COLORS.textLight,
+  },
   inputBar: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     backgroundColor: COLORS.card,
     padding: 8,
     borderTopWidth: 1,
@@ -161,10 +284,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
     marginRight: 8,
+    maxHeight: 100,
   },
   sendButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 20,
     padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 
