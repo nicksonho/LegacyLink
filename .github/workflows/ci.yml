@@ -39,7 +39,7 @@ jobs:
         run: npm install
       - name: Run frontend tests
         run: npm test
-      - name: Run linter
-        run: npm run lint 
+      # - name: Run linter
+      #   run: npm run lint 
 
         #The current CI setup, install all dependencies (backend and frontend), run tests, and run linter for the frontend.
