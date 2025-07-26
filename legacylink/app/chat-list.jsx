@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import SafeScreen from "../components/SafeScreen";
@@ -6,6 +6,7 @@ import { COLORS } from "../constants/colors";
 import { useRouter } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import { fetchConversations, formatMessageTime } from "../lib/chatUtils";
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function ChatListPage() {
   const router = useRouter();
@@ -13,11 +14,7 @@ export default function ChatListPage() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadConversations();
-  }, );
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       const token = await getToken();
       if (!token) {
@@ -33,7 +30,14 @@ export default function ChatListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
+
+  // Load conversations when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      loadConversations();
+    }, [loadConversations])
+  );
 
   if (loading) {
     return (

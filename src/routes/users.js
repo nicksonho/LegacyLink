@@ -10,10 +10,14 @@ import {
   getMe,
   getUserById,
   getAllUsers,
-  updateMe
+  updateMe,
+  getUserProfile
 } from '../controllers/userController.js';
 
 const router = express.Router();
+
+// Public route for getting basic user profile info for chat (no auth required)
+router.get('/:id/profile', getUserProfile);
 
 // All routes below require the user to be authenticated
 router.use(requireAuth);

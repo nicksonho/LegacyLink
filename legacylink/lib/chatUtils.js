@@ -8,6 +8,15 @@ export function generateChatId(userId1, userId2) {
   return `chat_${sortedIds[0]}_${sortedIds[1]}`;
 }
 
+// Extract user IDs from a chat ID
+export function extractUserIdsFromChatId(chatId) {
+  const parts = chatId.split('_');
+  if (parts.length === 3 && parts[0] === 'chat') {
+    return [parts[1], parts[2]];
+  }
+  return null;
+}
+
 // Fetch all conversations for a user
 export async function fetchConversations(token) {
   try {

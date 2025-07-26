@@ -17,14 +17,23 @@ import { generateChatId } from '../lib/chatUtils';
 const API_URL = Constants.expoConfig?.extra?.apiUrl;
 
 export default function MentorInbox() {
-  const { getToken, userId } = useAuth();
+  const { getToken } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const fetchRequests = async () => {
     try {
       const token = await getToken();
+      
+      // Get current user info
+      const userResponse = await fetch(`${API_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const currentUser = await userResponse.json();
+      setCurrentUserId(currentUser._id);
+      
       const res = await fetch(`${API_URL}/api/requests`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -41,7 +50,7 @@ export default function MentorInbox() {
 
   useEffect(() => {
     fetchRequests();
-  },);
+  }, []);
 
   const respondToRequest = async (id, action) => {
     try {
@@ -62,7 +71,11 @@ export default function MentorInbox() {
   };
 
   const startChat = (senderId) => {
-    const chatId = generateChatId(userId, senderId);
+    if (!currentUserId) {
+      Alert.alert('Error', 'User information not loaded yet.');
+      return;
+    }
+    const chatId = generateChatId(currentUserId, senderId);
     router.push(`/chat/${chatId}`);
   };
 

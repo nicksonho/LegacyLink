@@ -1,5 +1,6 @@
 import Message from '../models/message.js';
 import User from '../models/user.js';
+import { extractUserIdsFromChatId } from '../utils/chatHelpers.js';
 
 // Get all conversations for a user
 export async function getConversations(req, res) {
@@ -30,10 +31,44 @@ export async function getConversations(req, res) {
       }
     ]);
 
+    console.log('Found messages for conversations:', messages);
+
     // Get conversation partners info
     const conversations = await Promise.all(messages.map(async (msg) => {
-      const partnerId = msg.senderId.equals(userId) ? msg.receiverId : msg.senderId;
-      const partner = await User.findById(partnerId).select('name profilePicUrl');
+      let partnerId = null;
+      
+      // Try to get partner ID from senderId/receiverId
+      if (msg.receiverId) {
+        partnerId = msg.senderId.equals(userId) ? msg.receiverId : msg.senderId;
+      } else {
+        // Fallback: extract partner ID from chat ID
+        console.log('receiverId is null, extracting from chatId:', msg._id);
+        const userIds = extractUserIdsFromChatId(msg._id);
+        if (userIds) {
+          partnerId = userIds.find(id => id !== userId.toString());
+        }
+      }
+      
+      console.log('Looking for partner with ID:', partnerId);
+      console.log('Current user ID:', userId);
+      
+      let partner = null;
+      if (partnerId) {
+        partner = await User.findById(partnerId).select('name profilePicUrl');
+        console.log('Found partner:', partner);
+        
+        // If partner not found by _id, try finding by clerkId
+        if (!partner) {
+          partner = await User.findOne({ clerkId: partnerId }).select('name profilePicUrl');
+          console.log('Found partner by clerkId:', partner);
+        }
+      }
+      
+      // Fallback if still not found
+      if (!partner) {
+        partner = { name: 'Unknown User', profilePicUrl: null };
+        console.log('Using fallback partner info');
+      }
       
       return {
         _id: msg._id,

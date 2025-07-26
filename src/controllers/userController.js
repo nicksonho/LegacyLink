@@ -59,3 +59,15 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Get basic user info for chat purposes (name, profile pic)
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('name profilePicUrl');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

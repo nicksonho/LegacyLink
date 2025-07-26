@@ -6,12 +6,15 @@ import SafeScreen from "../../components/SafeScreen";
 import { COLORS } from "../../constants/colors";
 import { useAuth } from "@clerk/clerk-expo";
 import { useSocket } from "../../contexts/SocketContext";
-import { fetchMessages, sendMessage as sendMessageAPI } from "../../lib/chatUtils";
+import { fetchMessages, sendMessage as sendMessageAPI, extractUserIdsFromChatId } from "../../lib/chatUtils";
+import Constants from 'expo-constants';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
 
 export default function ChatDetailPage() {
   const router = useRouter();
   const { conversationId } = useLocalSearchParams();
-  const { getToken, userId } = useAuth();
+  const { getToken } = useAuth();
   const { socket, joinChat, leaveChat } = useSocket();
   
   const [messages, setMessages] = useState([]);
@@ -19,6 +22,7 @@ export default function ChatDetailPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [partner, setPartner] = useState({ name: "Loading..." });
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const handleNewMessage = useCallback((messageData) => {
     setMessages(prevMessages => [...prevMessages, messageData]);
@@ -32,14 +36,60 @@ export default function ChatDetailPage() {
         return;
       }
       
+      // First get current user info
+      const userResponse = await fetch(`${API_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const currentUser = await userResponse.json();
+      setCurrentUserId(currentUser._id);
+      
       const data = await fetchMessages(conversationId, token);
       setMessages(data);
       
       // Set partner info from the first message
       if (data.length > 0) {
         const firstMessage = data[0];
-        const partnerData = firstMessage.senderId._id === userId ? firstMessage.receiverId : firstMessage.senderId;
-        setPartner(partnerData);
+        const partnerData = firstMessage.senderId._id === currentUser._id ? firstMessage.receiverId : firstMessage.senderId;
+        if (partnerData && partnerData.name) {
+          setPartner(partnerData);
+        } else {
+          // Fallback: try to get partner info from chat ID
+          const userIds = extractUserIdsFromChatId(conversationId);
+          if (userIds) {
+            const partnerId = userIds.find(id => id !== currentUser._id);
+            if (partnerId) {
+              // Fetch partner info
+              try {
+                const partnerResponse = await fetch(`${API_URL}/api/users/${partnerId}/profile`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                const partner = await partnerResponse.json();
+                setPartner(partner);
+              } catch (err) {
+                console.error('Failed to fetch partner info:', err);
+                setPartner({ name: 'Unknown User' });
+              }
+            }
+          }
+        }
+      } else {
+        // No messages yet, get partner info from chat ID
+        const userIds = extractUserIdsFromChatId(conversationId);
+        if (userIds) {
+          const partnerId = userIds.find(id => id !== currentUser._id);
+          if (partnerId) {
+            try {
+              const partnerResponse = await fetch(`${API_URL}/api/users/${partnerId}/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              const partner = await partnerResponse.json();
+              setPartner(partner);
+            } catch (err) {
+              console.error('Failed to fetch partner info:', err);
+              setPartner({ name: 'Unknown User' });
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -47,7 +97,7 @@ export default function ChatDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [conversationId, getToken, userId]);
+  }, [conversationId, getToken]);
 
   useEffect(() => {
     loadMessages();
@@ -89,7 +139,29 @@ export default function ChatDetailPage() {
       let receiverId = null;
       if (messages.length > 0) {
         const firstMessage = messages[0];
-        receiverId = firstMessage.senderId._id === userId ? firstMessage.receiverId._id : firstMessage.senderId._id;
+        // Handle both populated object and string ID cases
+        const senderIdString = typeof firstMessage.senderId === 'object' ? firstMessage.senderId._id : firstMessage.senderId;
+        const receiverIdString = typeof firstMessage.receiverId === 'object' ? firstMessage.receiverId._id : firstMessage.receiverId;
+        
+        receiverId = senderIdString === currentUserId ? receiverIdString : senderIdString;
+      } else {
+        // If no messages exist, extract from chat ID
+        const userIds = extractUserIdsFromChatId(conversationId);
+        if (userIds) {
+          receiverId = userIds.find(id => id !== currentUserId);
+        }
+      }
+
+      console.log('SendMessage Debug:', {
+        currentUserId,
+        conversationId,
+        receiverId,
+        messagesLength: messages.length
+      });
+
+      if (!receiverId) {
+        Alert.alert('Error', 'Could not determine message recipient.');
+        return;
       }
 
       const messageData = {
@@ -113,7 +185,7 @@ export default function ChatDetailPage() {
   };
 
   const renderMessage = ({ item }) => {
-    const isMe = item.senderId._id === userId;
+    const isMe = item.senderId._id === currentUserId;
     return (
       <View style={[styles.messageRow, isMe ? styles.rowReverse : null]}>
         <View style={[styles.messageBubble, isMe ? styles.sent : styles.received]}>
