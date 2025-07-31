@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ export default function MentorInbox() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       const token = await getToken();
       
@@ -39,18 +39,34 @@ export default function MentorInbox() {
           Authorization: `Bearer ${token}`,
         },
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
-      setRequests(data);
+      console.log('Requests API response:', data);
+      
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setRequests(data);
+      } else if (data && Array.isArray(data.requests)) {
+        setRequests(data.requests);
+      } else {
+        console.error('Invalid response format:', data);
+        setRequests([]);
+      }
     } catch (err) {
       console.error('Failed to fetch requests:', err);
+      setRequests([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+  }, [fetchRequests]); // Add fetchRequests as dependency
 
   const respondToRequest = async (id, action) => {
     try {
@@ -89,6 +105,8 @@ export default function MentorInbox() {
 
       {loading ? (
         <ActivityIndicator size="large" color="#744d32" style={{ marginTop: 40 }} />
+      ) : !Array.isArray(requests) ? (
+        <Text style={styles.empty}>Error loading requests. Please try again.</Text>
       ) : requests.length === 0 ? (
         <Text style={styles.empty}>No requests yet.</Text>
       ) : (
