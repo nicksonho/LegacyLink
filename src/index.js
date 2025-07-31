@@ -13,7 +13,12 @@ import messageRoutes from './routes/message.js';
 const PORT = process.env.PORT || 3000;
 
 async function start() {
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    family: 4, // fixes Render DNS issues
+    serverSelectionTimeoutMS: 5000
+  });
   console.log('✅ MongoDB connected');
 
   const app = express();
