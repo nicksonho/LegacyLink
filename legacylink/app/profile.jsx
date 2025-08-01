@@ -1,4 +1,3 @@
-// app/profile.jsx
 import Constants from 'expo-constants';
 import { useAuth } from "@clerk/clerk-expo";
 import { useEffect, useState } from "react";
@@ -31,46 +30,74 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      console.log("Starting profile fetch...");
       try {
+        console.log("API_URL:", API_URL);
         const token = await getToken();
+        console.log("Retrieved token:", token);
+
         const res = await fetch(`${API_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error(`Failed to load profile [${res.status}]`);
+
+        console.log("Response status:", res.status);
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Failed to load profile [${res.status}]: ${errText}`);
+        }
+
         const data = await res.json();
+        console.log("Fetched profile data:", data);
         setUserData(data);
       } catch (err) {
+        console.error("Profile fetch error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
+
     fetchProfile();
   }, []);
 
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaType.IMAGE,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
       });
+
       if (!result.canceled) {
+        console.log("Image picked:", result.assets[0].uri);
         setUserData({ ...userData, profilePicUrl: result.assets[0].uri });
       }
     } catch (e) {
-      console.error(e);
+      console.error("Image picker error:", e);
     }
   };
 
   const handleUpdate = async () => {
     try {
       const token = await getToken();
+      console.log("Updating with token:", token);
+      console.log("Update payload (before cleanup):", userData);
+
+      const parsedYear = parseInt(userData.yearOfStudy);
       const payload = {
         ...userData,
-        yearOfStudy: userData.yearOfStudy === "" ? undefined : parseInt(userData.yearOfStudy),
+        yearOfStudy:
+          userData.yearOfStudy === "" ||
+          userData.yearOfStudy === null ||
+          isNaN(parsedYear)
+            ? undefined
+            : parsedYear,
       };
+
+      console.log("Final update payload:", payload);
+
       const res = await fetch(`${API_URL}/api/users/me`, {
         method: "PATCH",
         headers: {
@@ -79,7 +106,14 @@ export default function Profile() {
         },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`Failed to update profile [${res.status}]`);
+
+      console.log("Update response status:", res.status);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to update profile [${res.status}]: ${errorText}`);
+      }
+
       setIsEditing(false);
       Toast.show({
         type: "success",
@@ -87,6 +121,7 @@ export default function Profile() {
         text2: "Your changes were saved successfully.",
       });
     } catch (err) {
+      console.error("Update error:", err);
       setError(err.message);
     }
   };
@@ -113,7 +148,6 @@ export default function Profile() {
       style={{ flex: 1 }}
     >
       <LinearGradient colors={["#fffaf5", "#fbe0c3"]} style={styles.container}>
-        {/* Back Button */}
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
@@ -129,11 +163,7 @@ export default function Profile() {
           <Text style={styles.header}>Your Profile</Text>
 
           <View style={styles.card}>
-            <TouchableOpacity
-              onPress={pickImage}
-              activeOpacity={0.8}
-              style={styles.avatarContainer}
-            >
+            <TouchableOpacity onPress={pickImage} activeOpacity={0.8} style={styles.avatarContainer}>
               <Image
                 source={{ uri: userData.profilePicUrl || "https://via.placeholder.com/150" }}
                 style={styles.avatar}

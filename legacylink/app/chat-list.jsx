@@ -1,12 +1,23 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import SafeScreen from "../components/SafeScreen";
 import { COLORS } from "../constants/colors";
 import { useRouter } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 import { fetchConversations, formatMessageTime } from "../lib/chatUtils";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function ChatListPage() {
   const router = useRouter();
@@ -18,21 +29,20 @@ export default function ChatListPage() {
     try {
       const token = await getToken();
       if (!token) {
-        Alert.alert('Auth Error', 'User token missing.');
+        Alert.alert("Auth Error", "User token missing.");
         return;
       }
-      
+
       const data = await fetchConversations(token);
       setConversations(data);
     } catch (error) {
-      console.error('Error loading conversations:', error);
-      Alert.alert('Error', 'Failed to load conversations.');
+      console.error("Error loading conversations:", error);
+      Alert.alert("Error", "Failed to load conversations.");
     } finally {
       setLoading(false);
     }
   }, [getToken]);
 
-  // Load conversations when screen is focused
   useFocusEffect(
     React.useCallback(() => {
       loadConversations();
@@ -52,85 +62,75 @@ export default function ChatListPage() {
 
   return (
     <SafeScreen>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/home')} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chats</Text>
-      </View>
-      <FlatList
-        data={conversations}
-        keyExtractor={item => item._id}
-        renderItem={({ item }) => (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={80} // adjust based on header height
+      >
+        <View style={styles.header}>
           <TouchableOpacity
-            style={styles.tile}
-            onPress={() => router.push(`/chat/${item._id}`)}
-            activeOpacity={0.8}
+            onPress={() => router.replace("/home")}
+            style={styles.backButton}
           >
-            <Image 
-              source={{ 
-                uri: item.partner?.profilePicUrl || "https://via.placeholder.com/40x40.png?text=" + (item.partner?.name?.charAt(0) || "?")
-              }} 
-              style={styles.avatar} 
-            />
-            <View style={styles.tileTextContainer}>
-              <Text style={styles.partnerName}>{item.partner?.name || "Unknown"}</Text>
-              <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
-            </View>
-            <Text style={styles.time}>{formatMessageTime(item.lastMessageTime)}</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} style={{ marginLeft: 8 }} />
+            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            No chats yet. Connect with mentors to start conversations!
-          </Text>
-        }
-        refreshing={loading}
-        onRefresh={loadConversations}
-      />
+          <Text style={styles.headerTitle}>Chats</Text>
+        </View>
+        <FlatList
+          data={conversations}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.tile}
+              onPress={() => router.push(`/chat/${item._id}`)}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={{
+                  uri:
+                    item.partner?.profilePicUrl ||
+                    "https://via.placeholder.com/40x40.png?text=" +
+                      (item.partner?.name?.charAt(0) || "?"),
+                }}
+                style={styles.avatar}
+              />
+              <View style={styles.tileTextContainer}>
+                <Text style={styles.partnerName}>
+                  {item.partner?.name || "Unknown"}
+                </Text>
+                <Text style={styles.lastMessage} numberOfLines={1}>
+                  {item.lastMessage}
+                </Text>
+              </View>
+              <Text style={styles.time}>
+                {formatMessageTime(item.lastMessageTime)}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={COLORS.textLight}
+                style={{ marginLeft: 8 }}
+              />
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <Text style={styles.empty}>
+              No chats yet. Connect with mentors to start conversations!
+            </Text>
+          }
+          refreshing={loading}
+          onRefresh={loadConversations}
+        />
+      </KeyboardAvoidingView>
     </SafeScreen>
   );
 }
 
-//   return (
-//     <SafeScreen>
-//       <View style={styles.header}>
-//         <TouchableOpacity onPress={() => router.replace('/home')} style={styles.backButton}>
-//           <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-//         </TouchableOpacity>
-//         <Text style={styles.headerTitle}>Chats</Text>
-//       </View>
-//       <FlatList
-//         data={conversations}
-//         keyExtractor={item => item._id}
-//         renderItem={({ item }) => (
-//           <TouchableOpacity
-//             style={styles.tile}
-//             onPress={() => router.push(`/chat/${item._id}`)}
-//             activeOpacity={0.8}
-//           >
-//             <Image source={{ uri: item.partner.profilePicUrl }} style={styles.avatar} />
-//             <View style={styles.tileTextContainer}>
-//               <Text style={styles.partnerName}>{item.partner.name}</Text>
-//               <Text style={styles.lastMessage} numberOfLines={1}>{item.lastMessage}</Text>
-//             </View>
-//             <Text style={styles.time}>{item.lastMessageTime}</Text>
-//             <Ionicons name="chevron-forward" size={20} color={COLORS.textLight} style={{ marginLeft: 8 }} />
-//           </TouchableOpacity>
-//         )}
-//         contentContainerStyle={styles.listContainer}
-//         ListEmptyComponent={<Text style={styles.empty}>No chats yet.</Text>}
-//       />
-//     </SafeScreen>
-//   );
-// }
-
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
     borderColor: COLORS.border,
@@ -194,4 +194,14 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontSize: 16,
   },
-}); 
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: COLORS.primary,
+    fontSize: 16,
+  },
+});
