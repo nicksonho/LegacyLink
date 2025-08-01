@@ -5,11 +5,13 @@ const hf = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
 console.log('🔑 HF Key:', process.env.HUGGINGFACE_API_KEY);
 
 export async function getEmbedding(text) {
-  const res = await hf.featureExtraction({
+  const result = await hf.featureExtraction({
     model: 'sentence-transformers/all-MiniLM-L6-v2',
     inputs: text,
   });
-  return res;
+
+  if (!Array.isArray(result)) throw new Error('Embedding failed');
+  return result[0]; // Return the first embedding row
 }
 
 export function cosineSimilarity(vecA, vecB) {
