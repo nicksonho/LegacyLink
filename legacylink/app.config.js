@@ -10,6 +10,7 @@ export default ({ config }) => ({
   scheme: "legacylink",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
+  owner: "declansin", // ✅ REQUIRED for eas update
   ios: {
     supportsTablet: true
   },
