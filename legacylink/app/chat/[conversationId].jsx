@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +23,7 @@ export default function ChatDetailPage() {
   const [sending, setSending] = useState(false);
   const [partner, setPartner] = useState({ name: "Loading..." });
   const [currentUserId, setCurrentUserId] = useState(null);
+  const flatListRef = useRef(null);
 
   const handleNewMessage = useCallback((messageData) => {
     setMessages(prevMessages => [...prevMessages, messageData]);
@@ -176,6 +177,11 @@ export default function ChatDetailPage() {
       setMessages(prevMessages => [...prevMessages, newMessage]);
       setInput("");
       
+      // Scroll to bottom after sending message
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }, 100);
+      
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message.');
@@ -185,9 +191,12 @@ export default function ChatDetailPage() {
   };
 
   const renderMessage = ({ item }) => {
-    const isMe = item.senderId._id === currentUserId;
+    // Handle both populated object and string ID cases for senderId
+    const senderIdString = typeof item.senderId === 'object' ? item.senderId._id : item.senderId;
+    const isMe = senderIdString === currentUserId;
+    
     return (
-      <View style={[styles.messageRow, isMe ? styles.rowReverse : null]}>
+      <View style={[styles.messageRow, isMe ? styles.rowReverse : styles.rowLeft]}>
         <View style={[styles.messageBubble, isMe ? styles.sent : styles.received]}>
           <Text style={[styles.messageText, isMe ? styles.sentText : styles.receivedText]}>
             {item.text}
@@ -213,23 +222,35 @@ export default function ChatDetailPage() {
 
   return (
     <SafeScreen>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{partner.name}</Text>
-      </View>
-      
-      <FlatList
-        data={[...messages].reverse()}
-        keyExtractor={item => item._id}
-        renderItem={renderMessage}
-        contentContainerStyle={styles.messagesContainer}
-        inverted
-        showsVerticalScrollIndicator={false}
-      />
-      
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{partner.name}</Text>
+        </View>
+        
+        <FlatList
+          ref={flatListRef}
+          data={[...messages].reverse()}
+          keyExtractor={item => item._id}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.messagesContainer}
+          inverted
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => {
+            // Auto-scroll to bottom when new messages arrive
+            if (messages.length > 0) {
+              flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+            }
+          }}
+        />
+        
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
@@ -239,6 +260,12 @@ export default function ChatDetailPage() {
             placeholderTextColor={COLORS.textLight}
             multiline
             maxLength={500}
+            onFocus={() => {
+              // Scroll to bottom when input is focused
+              setTimeout(() => {
+                flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+              }, 100);
+            }}
           />
           <TouchableOpacity 
             onPress={sendMessage} 
@@ -257,6 +284,9 @@ export default function ChatDetailPage() {
   );
 }
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -293,9 +323,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     marginVertical: 4,
+    paddingHorizontal: 8,
+  },
+  rowLeft: {
+    justifyContent: "flex-start",
   },
   rowReverse: {
-    flexDirection: "row-reverse",
+    justifyContent: "flex-end",
   },
   messageBubble: {
     maxWidth: "75%",
@@ -308,16 +342,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   sent: {
+    backgroundColor: "#744d32", // Darker brown for sent messages
     alignSelf: "flex-end",
-    backgroundColor: COLORS.primary,
-    marginLeft: 32,
+    borderBottomRightRadius: 4, // Less rounded bottom-right corner
   },
   received: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.card,
+    backgroundColor: "#f5f5f5", // Light gray for received messages
     borderWidth: 1,
-    borderColor: COLORS.border,
-    marginRight: 32,
+    borderColor: "#e0e0e0",
+    alignSelf: "flex-start",
+    borderBottomLeftRadius: 4, // Less rounded bottom-left corner
   },
   messageText: {
     fontSize: 16,
